@@ -310,6 +310,39 @@ void main() {
       expect(options.echo, isFalse);
     });
 
+    test("validates a caller scoped request inbox prefix", () {
+      final options = NatsOptions(
+        servers: const [NatsServer.nats("localhost")],
+        requestInboxPrefix: "_INBOX.user-42",
+      );
+
+      expect(options.requestInboxPrefix, "_INBOX.user-42");
+      for (final prefix in [
+        "",
+        "_INBOX.*",
+        "_INBOX.>",
+        "_INBOX.trailing.",
+        "_INBOX.bad value",
+      ]) {
+        expect(
+          () => NatsOptions(
+            servers: const [NatsServer.nats("localhost")],
+            requestInboxPrefix: prefix,
+          ),
+          throwsArgumentError,
+          reason: prefix,
+        );
+      }
+      expect(
+        () => NatsOptions(
+          servers: const [NatsServer.nats("localhost")],
+          requestInboxPrefix: "prefix.${"x" * 50}",
+          maximumOutboundControlLineBytes: 64,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test("preserves and validates the inbound payload memory ceiling", () {
       final options = NatsOptions(
         servers: const [NatsServer.nats("localhost")],

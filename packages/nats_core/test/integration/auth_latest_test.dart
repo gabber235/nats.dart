@@ -180,6 +180,43 @@ void main() {
   );
 
   test(
+    "caller scoped request inbox works with restricted permissions",
+    () async {
+      final connection = await NatsConnection.connect(
+        NatsOptions(
+          servers: [NatsServer.parse(serverUrl!)],
+          authentication: NatsAuthentication.userPassword(
+            "alice",
+            "wonderland",
+          ),
+          requestInboxPrefix: "allowed.inbox",
+        ),
+      );
+      addTearDown(connection.close);
+      final responder = await connection.subscribe("allowed.request");
+      final responderListener = responder.messages.listen((message) {
+        connection.reply(message, message.payload).ignore();
+      });
+      addTearDown(responderListener.cancel);
+      addTearDown(responder.unsubscribe);
+
+      final response = await connection.request("allowed.request", const [
+        1,
+        2,
+        3,
+      ]);
+
+      expect(response.subject, startsWith("allowed.inbox."));
+      expect(response.payload, [1, 2, 3]);
+      await responderListener.cancel();
+      await responder.unsubscribe();
+      await connection.close();
+    },
+    skip: skipReason,
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
+
+  test(
     "maximum subscriptions is typed and leaves the connection usable",
     () async {
       final connection = await NatsConnection.connect(

@@ -79,6 +79,38 @@ void main() {
     expect(mux.pending, 0);
   });
 
+  test("caller scoped requests use one exact wildcard inbox", () async {
+    String? openedInbox;
+    late void Function(NatsMessage) route;
+    late String reply;
+    final published = Completer<void>();
+    final mux = RequestMux(
+      inboxPrefix: "_INBOX.panel-user",
+      openInbox: (subject, callback) async {
+        openedInbox = subject;
+        route = callback;
+      },
+      closeInbox: () async {},
+      publish: (_, _, {replySubject, headers, expectedEpoch}) async {
+        reply = replySubject!;
+        published.complete();
+      },
+    );
+
+    final response = mux.request(
+      subject: "service.request",
+      payload: const [],
+      timeout: const Duration(seconds: 30),
+      connectionEpoch: 1,
+    );
+    await published.future;
+    route(_message(reply, 7));
+
+    expect(openedInbox, "_INBOX.panel-user.*");
+    expect(reply, startsWith("_INBOX.panel-user."));
+    expect((await response).payload, [7]);
+  });
+
   test("no responders before any reply is a typed terminal error", () async {
     late void Function(NatsMessage) route;
     late String reply;

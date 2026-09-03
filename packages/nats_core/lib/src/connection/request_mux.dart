@@ -31,10 +31,11 @@ final class RequestMux {
     required RequestInboxOpener openInbox,
     required RequestInboxCloser closeInbox,
     required RequestPublisher publish,
+    String? inboxPrefix,
   }) : _openInbox = openInbox,
        _closeInbox = closeInbox,
        _publish = publish,
-       _inboxPrefix = "_INBOX.${_randomToken(22)}";
+       _inboxPrefix = inboxPrefix ?? "_INBOX.${_randomToken(22)}";
 
   final RequestInboxOpener _openInbox;
   final RequestInboxCloser _closeInbox;

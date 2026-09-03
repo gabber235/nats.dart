@@ -181,6 +181,24 @@ default. Set `NatsReconnectPolicy.retryAuthenticationFailures` only when a
 provider deliberately rotates credentials and the configured attempt policy is
 the intended recovery bound.
 
+When server permissions grant replies through a caller scoped namespace,
+configure `NatsOptions.requestInboxPrefix`. The value must be a literal subject
+prefix without wildcards. Every request uses one shared wildcard subscription
+below that prefix and one random child subject per reply:
+
+```dart
+final connection = await NatsConnection.connect(
+  NatsOptions(
+    servers: [NatsServer.parse("nats://127.0.0.1:4222")],
+    requestInboxPrefix: "_INBOX.user-42",
+  ),
+);
+```
+
+The server must allow subscription to `_INBOX.user-42.*` and publication by
+responders to `_INBOX.user-42.>`. Omit the option for the default random
+connection namespace.
+
 ### Server pool control
 
 `getServers()` returns an immutable credential free snapshot containing

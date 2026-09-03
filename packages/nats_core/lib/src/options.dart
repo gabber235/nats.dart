@@ -3,6 +3,7 @@ import "dart:typed_data";
 
 import "package:nats_core/src/authentication.dart";
 import "package:nats_core/src/byte_snapshot.dart";
+import "package:nats_core/src/error.dart";
 import "package:nats_core/src/server_info.dart";
 import "package:nats_core/src/subject.dart";
 
@@ -358,6 +359,7 @@ final class NatsOptions {
     NatsAuthentication? authentication,
     NatsReconnectPolicy? reconnect,
     NatsReconnectServerSelector? reconnectToServer,
+    String? requestInboxPrefix,
     bool echo = true,
     int maximumInboundPayloadBytes = 8 * 1024 * 1024,
     int maximumOutboundControlLineBytes = defaultMaximumNatsControlLineBytes,
@@ -388,6 +390,24 @@ final class NatsOptions {
         "maximumOutboundControlLineBytes",
         "Must be between 64 and 1048576",
       );
+    }
+    if (requestInboxPrefix != null) {
+      try {
+        validatePublishSubject(
+          "$requestInboxPrefix.${"x" * 12}",
+          maximumBytes: maximumOutboundControlLineBytes,
+        );
+        validateSubscriptionSubject(
+          "$requestInboxPrefix.*",
+          maximumBytes: maximumOutboundControlLineBytes,
+        );
+      } on NatsSubjectException catch (error) {
+        throw ArgumentError.value(
+          requestInboxPrefix,
+          "requestInboxPrefix",
+          error.message,
+        );
+      }
     }
     if (maximumDiscoveredServers < 1 || maximumDiscoveredServers > 65536) {
       throw ArgumentError.value(
@@ -441,6 +461,7 @@ final class NatsOptions {
       authentication,
       reconnect ?? NatsReconnectPolicy(),
       reconnectToServer,
+      requestInboxPrefix,
       echo,
       maximumInboundPayloadBytes,
       maximumOutboundControlLineBytes,
@@ -462,6 +483,7 @@ final class NatsOptions {
     this.authentication,
     this.reconnect,
     this.reconnectToServer,
+    this.requestInboxPrefix,
     this.echo,
     this.maximumInboundPayloadBytes,
     this.maximumOutboundControlLineBytes,
@@ -498,6 +520,13 @@ final class NatsOptions {
 
   /// Optional server and bounded extra delay selection for reconnect attempts.
   final NatsReconnectServerSelector? reconnectToServer;
+
+  /// Literal subject prefix used for shared request reply inboxes.
+  ///
+  /// When absent, each connection owns a random `_INBOX` namespace. Configure
+  /// this only when server permissions require a caller specific namespace.
+  /// The connection appends one random token to this prefix for every request.
+  final String? requestInboxPrefix;
 
   /// Whether this connection receives its own matching publications.
   final bool echo;

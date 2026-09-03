@@ -55,6 +55,7 @@ final class NatsConnection {
       openInbox: _openRequestInbox,
       closeInbox: _closeRequestInbox,
       publish: _publishRequest,
+      inboxPrefix: _options.requestInboxPrefix,
     );
   }
 
