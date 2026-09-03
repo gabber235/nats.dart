@@ -1,0 +1,22 @@
+name: nats_jetstream
+description: JetStream, KV, and Object Store support for nats_core.
+version: 0.0.1
+publish_to: none
+repository: https://github.com/gabber235/nats.dart
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  crypto: ^3.0.6
+  nats_core: any
+
+dev_dependencies:
+  test: ^1.31.0
+
+topics:
+  - jetstream
+  - messaging
+  - nats
