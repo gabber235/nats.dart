@@ -1,0 +1,657 @@
+{
+  "schemaVersion": 1,
+  "dart": {
+    "minimum": "3.11.0",
+    "required": "3.13.2"
+  },
+  "flutter": {
+    "required": "3.47.2",
+    "revision": "d3b14c876900e553bc736ca19295fc09e3853e8e"
+  },
+  "dagger": {
+    "required": "0.21.9",
+    "githubAction": "8.4.1"
+  },
+  "githubActions": {
+    "checkout": "11d5960a326750d5838078e36cf38b85af677262",
+    "dagger": "27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77",
+    "setupDart": "6afc89df92d6eb3834022f73cd65adc8cdfcb92d"
+  },
+  "natsServer": {
+    "required": "2.14.6",
+    "mergeCompatibility": "2.12.15",
+    "scheduledCompatibility": "2.10.29"
+  },
+  "natsGo": {
+    "required": "1.53.1"
+  },
+  "nativeServerArchives": {
+    "linux-x64": {
+      "url": "https://github.com/nats-io/nats-server/releases/download/v2.14.6/nats-server-v2.14.6-linux-amd64.tar.gz",
+      "sha256": "61c3d55f69f61ec616b75782250936445f2819e9e5f2ae6159b10a31abd2200c"
+    },
+    "linux-arm64": {
+      "url": "https://github.com/nats-io/nats-server/releases/download/v2.14.6/nats-server-v2.14.6-linux-arm64.tar.gz",
+      "sha256": "3ff6e463762db64186a36cf0276dae8320509e995151ad0153ba9c9f67eee3f9"
+    },
+    "macos-x64": {
+      "url": "https://github.com/nats-io/nats-server/releases/download/v2.14.6/nats-server-v2.14.6-darwin-amd64.tar.gz",
+      "sha256": "239d4f3314334cc86cb12d7c252cf9b3461364451cc8ec5a39fb4915acd717c1"
+    },
+    "macos-arm64": {
+      "url": "https://github.com/nats-io/nats-server/releases/download/v2.14.6/nats-server-v2.14.6-darwin-arm64.tar.gz",
+      "sha256": "291b9aa8c342b3cdcc53d872585bd467de4b5c9acf375066d882eb5412a09d55"
+    },
+    "windows-x64": {
+      "url": "https://github.com/nats-io/nats-server/releases/download/v2.14.6/nats-server-v2.14.6-windows-amd64.zip",
+      "sha256": "b47e9c69480e41e668e495e8b980b12dbf226d1ce7eceb9c44acdd33640bafcd"
+    },
+    "windows-arm64": {
+      "url": "https://github.com/nats-io/nats-server/releases/download/v2.14.6/nats-server-v2.14.6-windows-arm64.zip",
+      "sha256": "d7d7a4d22039f265f049591194f592bab742f33ed36236f4475f670a275946fb"
+    }
+  },
+  "images": {
+    "dart": "dart:3.13.2@sha256:1f86408456fbcdc5f9c33fa267d3680d86e79c255ec338b9a215459224769770",
+    "dartMinimum": "dart:3.11.0@sha256:193a4d037dcef48b56f2a3544f053f4ef3b5e9865953f8f5ff2a284554da567a",
+    "browser": "selenium/standalone-chromium:4.46.0-20260707@sha256:3400b92f1cddb2dfaaf358654e8f7d83d7be45192fb73c5f28c25faa28d36504",
+    "flutter": "ghcr.io/gmeligio/flutter-linux:3.47.2@sha256:b0534f1e7a44f28a5c6e9aefe45a4310d37b1223c9db286946578dd92c7a9cdc",
+    "natsLatest": "nats:2.14.6-alpine@sha256:ad7a43eb7e3337c3c38ce5d784d1461791f95f730f252d2b25eee699752a0ca3",
+    "natsCompatibility212": "nats:2.12.15-alpine@sha256:b270f5e2428354c0335612694d7dd2fb588148e567a5757fdff325ef9c9332e6",
+    "natsCompatibility210": "nats:2.10.29-alpine@sha256:b83efabe3e7def1e0a4a31ec6e078999bb17c80363f881df35edc70fcb6bb927",
+    "goBuilder": "golang:1.26.0-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0734277e69905473e5"
+  },
+  "integrationLanes": {
+    "compatibility212": {
+      "check": "Compatibility212",
+      "environment": {
+        "NATS_EXPECTS_MESSAGE_TRACING": "true"
+      },
+      "prerequisites": [
+        "NATS_URL",
+        "NATS_MONITOR_URL",
+        "NATS_EXPECTS_MESSAGE_TRACING",
+        "NATS_EXPECTED_API_LEVEL"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/core_latest_test.dart",
+        "packages/nats_core/test/integration/core_lifecycle_latest_test.dart",
+        "packages/nats_jetstream/test/integration/compatibility_baseline_test.dart"
+      ]
+    },
+    "compatibility210": {
+      "check": "Compatibility210",
+      "environment": {
+        "NATS_EXPECTS_MESSAGE_TRACING": "false"
+      },
+      "prerequisites": [
+        "NATS_URL",
+        "NATS_MONITOR_URL",
+        "NATS_EXPECTS_MESSAGE_TRACING",
+        "NATS_EXPECTED_API_LEVEL"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/core_latest_test.dart",
+        "packages/nats_core/test/integration/core_lifecycle_latest_test.dart",
+        "packages/nats_jetstream/test/integration/compatibility_baseline_test.dart"
+      ]
+    },
+    "coreLatest": {
+      "check": "CoreLatest",
+      "environment": {
+        "NATS_EXPECTS_MESSAGE_TRACING": "true"
+      },
+      "prerequisites": [
+        "NATS_URL",
+        "NATS_MONITOR_URL",
+        "NATS_EXPECTS_MESSAGE_TRACING"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/core_latest_test.dart",
+        "packages/nats_core/test/integration/core_lifecycle_latest_test.dart"
+      ]
+    },
+    "jetStreamLatest": {
+      "check": "JetStreamLatest",
+      "prerequisites": [
+        "NATS_URL",
+        "NATS_MONITOR_URL",
+        "NATS_EXPECTED_API_LEVEL",
+        "NATS_DOMAIN_URL",
+        "NATS_DOMAIN_API_PREFIX"
+      ],
+      "files": [
+        "packages/nats_jetstream/test/integration/async_publish_fault_latest_test.dart",
+        "packages/nats_jetstream/test/integration/async_publish_latest_test.dart",
+        "packages/nats_jetstream/test/integration/atomic_fast_batch_latest_test.dart",
+        "packages/nats_jetstream/test/integration/compatibility_baseline_test.dart",
+        "packages/nats_jetstream/test/integration/consumer_delivery_latest_test.dart",
+        "packages/nats_jetstream/test/integration/consumer_management_latest_test.dart",
+        "packages/nats_jetstream/test/integration/direct_get_latest_test.dart",
+        "packages/nats_jetstream/test/integration/domain_routing_latest_test.dart",
+        "packages/nats_jetstream/test/integration/jetstream_account_stream_latest_test.dart",
+        "packages/nats_jetstream/test/integration/kv_codecs_transforms_latest_test.dart",
+        "packages/nats_jetstream/test/integration/kv_core_latest_test.dart",
+        "packages/nats_jetstream/test/integration/kv_management_latest_test.dart",
+        "packages/nats_jetstream/test/integration/kv_mirror_sources_latest_test.dart",
+        "packages/nats_jetstream/test/integration/message_schedule_latest_test.dart",
+        "packages/nats_jetstream/test/integration/message_ttl_constraints_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_crud_upload_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_integrity_limits_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_links_metadata_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_management_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_watch_adversarial_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_watch_latest_test.dart",
+        "packages/nats_jetstream/test/integration/ordered_consumer_latest_test.dart",
+        "packages/nats_jetstream/test/integration/publish_counter_latest_test.dart",
+        "packages/nats_jetstream/test/integration/stream_management_latest_test.dart",
+        "packages/nats_jetstream/test/integration/stream_source_latest_test.dart",
+        "packages/nats_jetstream/test/integration/stream_transfer_latest_test.dart"
+      ]
+    },
+    "ackSubjectV2Latest": {
+      "check": "AckSubjectV2Latest",
+      "prerequisites": [
+        "NATS_URL"
+      ],
+      "files": [
+        "packages/nats_jetstream/test/integration/ack_subject_v2_latest_test.dart"
+      ]
+    },
+    "accountTierLatest": {
+      "check": "AccountTierLatest",
+      "prerequisites": [
+        "NATS_URL",
+        "NATS_TIER_USER_JWT_FILE"
+      ],
+      "files": [
+        "packages/nats_jetstream/test/integration/account_tier_latest_test.dart"
+      ]
+    },
+    "goInteropLatest": {
+      "check": "GoInteropLatest",
+      "prerequisites": [
+        "NATS_URL",
+        "NATS_GO_INTEROP_BINARY"
+      ],
+      "files": [
+        "packages/nats_jetstream/test/integration/go_interop_latest_test.dart"
+      ]
+    },
+    "reconnectLatest": {
+      "check": "ReconnectLatest",
+      "prerequisites": [
+        "NATS_SERVER_BINARY"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/reconnect_latest_test.dart",
+        "packages/nats_core/test/integration/server_pool_latest_test.dart",
+        "packages/nats_core/test/integration/websocket_reconnect_latest_test.dart",
+        "packages/nats_jetstream/test/integration/kv_watch_reconnect_latest_test.dart",
+        "packages/nats_jetstream/test/integration/object_store_watch_reconnect_latest_test.dart",
+        "packages/nats_jetstream/test/integration/ordered_consumer_reconnect_latest_test.dart"
+      ]
+    },
+    "reconnectSuspendLatest": {
+      "check": "ReconnectSuspendLatest",
+      "prerequisites": [
+        "NATS_SERVER_BINARY"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/reconnect_suspend_latest_test.dart",
+        "packages/nats_jetstream/test/integration/consumer_fetch_suspend_latest_test.dart"
+      ]
+    },
+    "jetStreamClusterLatest": {
+      "check": "JetStreamClusterLatest",
+      "prerequisites": [
+        "NATS_SERVER_BINARY"
+      ],
+      "files": [
+        "packages/nats_jetstream/test/integration/cluster_failover_latest_test.dart",
+        "packages/nats_jetstream/test/integration/cluster_leader_stepdown_latest_test.dart",
+        "packages/nats_jetstream/test/integration/cluster_peer_removal_latest_test.dart"
+      ]
+    },
+    "tlsLatest": {
+      "check": "TlsLatest",
+      "prerequisites": [
+        "NATS_TLS_URL",
+        "NATS_TLS_FIRST_URL",
+        "NATS_CA",
+        "NATS_MTLS_URL",
+        "NATS_MTLS_CA",
+        "NATS_MTLS_CLIENT_CERT",
+        "NATS_MTLS_CLIENT_KEY",
+        "NATS_MTLS_OUTSIDER_CERT",
+        "NATS_MTLS_OUTSIDER_KEY"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/tls_latest_test.dart"
+      ]
+    },
+    "webSocketLatest": {
+      "check": "WebSocketLatest",
+      "prerequisites": [
+        "NATS_WS_URL",
+        "NATS_WSS_URL",
+        "NATS_WS_CA"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/websocket_latest_test.dart"
+      ]
+    },
+    "webSocketBrowserLatest": {
+      "check": "WebSocketLatest",
+      "prerequisites": [
+        "NATS_WS_URL",
+        "NATS_WSS_URL",
+        "CHROME_EXECUTABLE"
+      ],
+      "platform": "chrome",
+      "files": [
+        "packages/nats_core/test/browser/websocket_browser_latest_test.dart"
+      ]
+    },
+    "authLatest": {
+      "check": "AuthLatest",
+      "prerequisites": [
+        "NATS_AUTH_URL",
+        "NATS_TOKEN_AUTH_URL",
+        "NATS_CREDENTIALS_URL",
+        "NATS_CREDENTIALS_FILE"
+      ],
+      "files": [
+        "packages/nats_core/test/integration/auth_latest_test.dart"
+      ]
+    }
+  },
+  "requiredLatestFeatures": [
+    "core_server_pool",
+    "credentials_authentication",
+    "mutual_tls",
+    "account_stats",
+    "atomic_batch_publish",
+    "fast_batch_publish",
+    "async_publish_deduplication",
+    "message_schedules",
+    "direct_batch_get",
+    "stream_snapshot_restore",
+    "stream_leader_stepdown",
+    "stream_peer_removal",
+    "reliable_stream_sources",
+    "consumer_reset",
+    "consumer_priority",
+    "continuous_pull",
+    "ordered_consumer",
+    "ack_flow_control",
+    "ack_subject_v1",
+    "ack_subject_v2",
+    "strict_jetstream_json",
+    "generic_message_ttl",
+    "asynchronous_persistence",
+    "wildcard_sequence_constraints",
+    "publish_counters",
+    "kv_codecs",
+    "kv_management",
+    "kv_mirror_sources",
+    "kv_subject_transforms",
+    "object_store_crud",
+    "object_store_fast_ingest",
+    "object_store_integrity",
+    "object_store_links",
+    "object_store_watch",
+    "object_store_management",
+    "stream_mirror_promotion",
+    "secure_message_delete"
+  ],
+  "featureTests": {
+    "core_server_pool": [
+      {
+        "file": "packages/nats_core/test/integration/server_pool_latest_test.dart",
+        "markers": ["connection.setServers([", "reconnectToServer:"]
+      }
+    ],
+    "credentials_authentication": [
+      {
+        "file": "packages/nats_core/test/integration/auth_latest_test.dart",
+        "markers": [
+          "parsed credentials content signs the server nonce and authenticates",
+          "credentials file signs the server nonce and authenticates"
+        ]
+      }
+    ],
+    "mutual_tls": [
+      {
+        "file": "packages/nats_core/test/integration/tls_latest_test.dart",
+        "markers": [
+          "mutual TLS accepts a client certificate signed by the configured CA",
+          "mutual TLS rejects a missing client certificate",
+          "mutual TLS rejects a client certificate signed by another CA"
+        ]
+      }
+    ],
+    "account_stats": [
+      {
+        "file": "packages/nats_jetstream/test/integration/account_tier_latest_test.dart",
+        "markers": [
+          "expect(before.tiers, contains(\"R1\"))",
+          "beforeTier.limits.maximumMemoryBytes",
+          "expect(afterTier.streams, BigInt.one)"
+        ]
+      }
+    ],
+    "atomic_batch_publish": [
+      {
+        "file": "packages/nats_jetstream/test/integration/atomic_fast_batch_latest_test.dart",
+        "markers": ["publishAtomicBatch([", "atomicAck.messageCount"]
+      }
+    ],
+    "fast_batch_publish": [
+      {
+        "file": "packages/nats_jetstream/test/integration/atomic_fast_batch_latest_test.dart",
+        "markers": ["publishFastBatchMessages(", "fastAck.gaps"]
+      }
+    ],
+    "async_publish_deduplication": [
+      {
+        "file": "packages/nats_jetstream/test/integration/async_publish_fault_latest_test.dart",
+        "markers": [
+          "deduplicated publish retries after stored ack is dropped and TCP resets",
+          "acknowledgement.duplicate, isTrue"
+        ]
+      }
+    ],
+    "message_schedules": [
+      {
+        "file": "packages/nats_jetstream/test/integration/message_schedule_latest_test.dart",
+        "markers": ["jetStream.scheduleMessage(", "jetStream.cancelSchedule("]
+      }
+    ],
+    "direct_batch_get": [
+      {
+        "file": "packages/nats_jetstream/test/integration/direct_get_latest_test.dart",
+        "markers": [
+          "direct single, batch, payload, and multiple subject reads round trip",
+          "jetStream.direct.batch("
+        ]
+      }
+    ],
+    "stream_snapshot_restore": [
+      {
+        "file": "packages/nats_jetstream/test/integration/stream_transfer_latest_test.dart",
+        "markers": ["snapshotStreamTo(", "restoreStreamFrom("]
+      }
+    ],
+    "stream_leader_stepdown": [
+      {
+        "file": "packages/nats_jetstream/test/integration/cluster_leader_stepdown_latest_test.dart",
+        "markers": [
+          "preferred stream leader stepdown preserves replicated state",
+          "requestStreamLeaderStepDown("
+        ]
+      }
+    ],
+    "stream_peer_removal": [
+      {
+        "file": "packages/nats_jetstream/test/integration/cluster_peer_removal_latest_test.dart",
+        "markers": [
+          "peer removal distinguishes replacement from partial reduction",
+          "removeStreamPeer("
+        ]
+      }
+    ],
+    "reliable_stream_sources": [
+      {
+        "file": "packages/nats_jetstream/test/integration/stream_source_latest_test.dart",
+        "markers": [
+          "ordinary and durable sources move messages and report zero lag",
+          "JetStreamStreamSource("
+        ]
+      }
+    ],
+    "consumer_reset": [
+      {
+        "file": "packages/nats_jetstream/test/integration/consumer_delivery_latest_test.dart",
+        "markers": ["resetToSequence(", "reset.resetSequence"]
+      }
+    ],
+    "consumer_priority": [
+      {
+        "file": "packages/nats_jetstream/test/integration/consumer_management_latest_test.dart",
+        "markers": [
+          "JetStreamConsumerPriorityPolicy.pinnedClient",
+          "JetStreamFetchPriority.prioritized("
+        ]
+      }
+    ],
+    "continuous_pull": [
+      {
+        "file": "packages/nats_jetstream/test/integration/consumer_delivery_latest_test.dart",
+        "markers": [
+          "final continuous = continuousPull.consume(",
+          "await continuous.done"
+        ]
+      }
+    ],
+    "ordered_consumer": [
+      {
+        "file": "packages/nats_jetstream/test/integration/ordered_consumer_latest_test.dart",
+        "markers": [
+          "JetStreamOrderedConsumerCreated",
+          "JetStreamOrderedConsumerRecreated",
+          "JetStreamOrderedConsumerGap"
+        ]
+      },
+      {
+        "file": "packages/nats_jetstream/test/integration/ordered_consumer_reconnect_latest_test.dart",
+        "markers": [
+          "JetStreamOrderedConsumerRecreationReason.connectionGenerationChanged"
+        ]
+      }
+    ],
+    "ack_flow_control": [
+      {
+        "file": "packages/nats_jetstream/test/integration/stream_source_latest_test.dart",
+        "markers": [
+          "ordinary and durable sources move messages and report zero lag",
+          "createReliableSource("
+        ]
+      }
+    ],
+    "ack_subject_v1": [
+      {
+        "file": "packages/nats_jetstream/test/integration/consumer_delivery_latest_test.dart",
+        "markers": [
+          "pull fetch acknowledgements and continuous delivery round trip",
+          "metadata?.version, 1"
+        ]
+      }
+    ],
+    "ack_subject_v2": [
+      {
+        "file": "packages/nats_jetstream/test/integration/ack_subject_v2_latest_test.dart",
+        "markers": [
+          "expect(first.version, 2)",
+          "expect(first.domain, \"ACKV2\")",
+          "expect(first.accountHash, isNotEmpty)",
+          "acknowledgementsPending, BigInt.zero"
+        ]
+      }
+    ],
+    "strict_jetstream_json": [
+      {
+        "file": "packages/nats_jetstream/test/integration/stream_management_latest_test.dart",
+        "markers": [
+          "unknown_latest_field",
+          "contains(\"unknown field\")"
+        ]
+      }
+    ],
+    "generic_message_ttl": [
+      {
+        "file": "packages/nats_jetstream/test/integration/message_ttl_constraints_latest_test.dart",
+        "markers": [
+          "message TTL and subject sequence constraints round trip",
+          "allowMessageTtl: true"
+        ]
+      }
+    ],
+    "asynchronous_persistence": [
+      {
+        "file": "packages/nats_jetstream/test/integration/jetstream_account_stream_latest_test.dart",
+        "markers": [
+          "persistMode: JetStreamPersistMode.asynchronous",
+          "created.config.raw[\"persist_mode\"]",
+          "expect(acknowledgement.stream, configuration.name)"
+        ]
+      }
+    ],
+    "wildcard_sequence_constraints": [
+      {
+        "file": "packages/nats_jetstream/test/integration/message_ttl_constraints_latest_test.dart",
+        "markers": [
+          "message TTL and subject sequence constraints round trip",
+          "expectedLastSubjectSequence"
+        ]
+      }
+    ],
+    "publish_counters": [
+      {
+        "file": "packages/nats_jetstream/test/integration/publish_counter_latest_test.dart",
+        "markers": [
+          "ordinary publish deduplication and counters round trip",
+          "incrementCounter("
+        ]
+      }
+    ],
+    "kv_codecs": [
+      {
+        "file": "packages/nats_jetstream/test/integration/kv_codecs_transforms_latest_test.dart",
+        "markers": [
+          "const codecs = JetStreamKeyValueCodecs(",
+          "final coded = raw.withCodecs(codecs)",
+          "await coded.keys(filters: const"
+        ]
+      }
+    ],
+    "kv_management": [
+      {
+        "file": "packages/nats_jetstream/test/integration/kv_management_latest_test.dart",
+        "markers": [
+          "KV management status filters wildcard mutations and cleanup round trip",
+          "purgeDeletes("
+        ]
+      }
+    ],
+    "kv_mirror_sources": [
+      {
+        "file": "packages/nats_jetstream/test/integration/kv_mirror_sources_latest_test.dart",
+        "markers": [
+          "KV mirror sources updates and strict strings round trip",
+          "mirror: JetStreamStreamSource("
+        ]
+      }
+    ],
+    "kv_subject_transforms": [
+      {
+        "file": "packages/nats_jetstream/test/integration/kv_codecs_transforms_latest_test.dart",
+        "markers": [
+          "name: eventStreamName",
+          "subjectTransforms: [",
+          "expect(status.sources.single.name, eventStreamName)"
+        ]
+      }
+    ],
+    "object_store_crud": [
+      {
+        "file": "packages/nats_jetstream/test/integration/object_store_crud_upload_latest_test.dart",
+        "markers": [
+          "Object Store CRUD and streaming upload preserve exact bytes",
+          "putBytes("
+        ]
+      }
+    ],
+    "object_store_fast_ingest": [
+      {
+        "file": "packages/nats_jetstream/test/integration/object_store_crud_upload_latest_test.dart",
+        "markers": [
+          "experimentalFastIngest: true",
+          "mode: JetStreamObjectPutMode.experimentalFastIngest",
+          "expect(fast.chunks, BigInt.from(5))",
+          "final fastReplacement = await bucket.putBytes"
+        ]
+      }
+    ],
+    "object_store_integrity": [
+      {
+        "file": "packages/nats_jetstream/test/integration/object_store_integrity_limits_latest_test.dart",
+        "markers": [
+          "Object Store rejects forged metadata and ambiguous concurrent writes",
+          "JetStreamObjectIntegrityException"
+        ]
+      }
+    ],
+    "object_store_links": [
+      {
+        "file": "packages/nats_jetstream/test/integration/object_store_links_metadata_latest_test.dart",
+        "markers": [
+          "Object Store metadata and links preserve identity and targets",
+          "addObjectLink("
+        ]
+      }
+    ],
+    "object_store_watch": [
+      {
+        "file": "packages/nats_jetstream/test/integration/object_store_watch_latest_test.dart",
+        "markers": [
+          "Object Store watch and list preserve bounded metadata semantics",
+          "bucket.watch("
+        ]
+      }
+    ],
+    "object_store_management": [
+      {
+        "file": "packages/nats_jetstream/test/integration/object_store_management_latest_test.dart",
+        "markers": [
+          "Object Store management and strict string helpers round trip",
+          "createOrUpdate("
+        ]
+      }
+    ],
+    "stream_mirror_promotion": [
+      {
+        "file": "packages/nats_jetstream/test/integration/stream_management_latest_test.dart",
+        "markers": [
+          "mirror promotion preserves stored data and accepts publications",
+          "clearMirror: true"
+        ]
+      }
+    ],
+    "secure_message_delete": [
+      {
+        "file": "packages/nats_jetstream/test/integration/stream_management_latest_test.dart",
+        "markers": [
+          "stream read, copy, update preserves the complete server configuration",
+          "secure: true"
+        ]
+      }
+    ]
+  },
+  "excludedUnreleasedFeatures": [
+    "server_2_15"
+  ],
+  "referenceClientFeatures": {
+    "kv_codecs_adr_54": {
+      "status": "public_in_nats_js_3_4_0",
+      "specificationStatus": "proposed",
+      "implementation": "complete"
+    },
+    "kv_subject_transforms_adr_57": {
+      "status": "proposed_not_in_nats_js_3_4_0",
+      "specificationStatus": "proposed",
+      "implementation": "complete",
+      "serverProof": "nats_2_14_6"
+    }
+  }
+}
