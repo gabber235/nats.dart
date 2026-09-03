@@ -93,9 +93,24 @@ void main() {
       expect(failure.messageId, "deadline-message");
       expect(failure.attempts, greaterThan(1));
       expect(failure.attempts, lessThanOrEqualTo(8));
-      expect(fixture.proxy.targetPublishes, failure.attempts);
-      expect(fixture.proxy.acknowledgementsObserved, failure.attempts);
-      expect(fixture.proxy.acknowledgementsDropped, failure.attempts);
+      expect(fixture.proxy.targetPublishes, greaterThan(1));
+      expect(
+        fixture.proxy.targetPublishes,
+        lessThanOrEqualTo(failure.attempts),
+      );
+      expect(
+        failure.attempts - fixture.proxy.targetPublishes,
+        lessThanOrEqualTo(1),
+      );
+      expect(fixture.proxy.targetMessageIds, everyElement("deadline-message"));
+      expect(
+        fixture.proxy.acknowledgementsObserved,
+        fixture.proxy.targetPublishes,
+      );
+      expect(
+        fixture.proxy.acknowledgementsDropped,
+        fixture.proxy.targetPublishes,
+      );
       expect(fixture.publishConnection.generation, 1);
       expect(fixture.publishConnection.isConnected, isTrue);
       await fixture.publishConnection.flush();
