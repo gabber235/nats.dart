@@ -13,7 +13,7 @@
     "githubAction": "8.4.1"
   },
   "githubActions": {
-    "checkout": "11d5960a326750d5838078e36cf38b85af677262",
+    "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
     "dagger": "27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77",
     "setupDart": "6afc89df92d6eb3834022f73cd65adc8cdfcb92d"
   },
