@@ -45,6 +45,16 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
     final stream = harness.consume();
+    final doneExpectation = expectLater(
+      stream.done,
+      throwsA(
+        isA<JetStreamProtocolException>().having(
+          (error) => error.fieldPath,
+          "fieldPath",
+          "consumer",
+        ),
+      ),
+    );
     final messages = <JetStreamDelivery>[];
     final errors = <Object>[];
     final listener = stream.messages.listen(messages.add, onError: errors.add);
@@ -55,16 +65,7 @@ void main() {
       1,
     ], replySubject: r"$JS.ACK.EVENTS.OTHER.1.1.1.1.0");
 
-    await expectLater(
-      stream.done,
-      throwsA(
-        isA<JetStreamProtocolException>().having(
-          (error) => error.fieldPath,
-          "fieldPath",
-          "consumer",
-        ),
-      ),
-    );
+    await doneExpectation;
     expect(messages, isEmpty);
     expect(errors, [isA<JetStreamProtocolException>()]);
     expect(
@@ -172,13 +173,14 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
     final deferred = await _pauseAtBatchBoundary(harness);
-
-    await harness.connection.close();
-
-    await expectLater(
+    final doneExpectation = expectLater(
       deferred.stream.done.timeout(_deadline),
       throwsA(isA<NatsClosedException>()),
     );
+
+    await harness.connection.close();
+
+    await doneExpectation;
     deferred.listener.resume();
     await deferred.closed.future.timeout(_deadline);
     expect(deferred.errors, [isA<NatsClosedException>()]);
@@ -192,6 +194,16 @@ void main() {
     final stream = harness.consume(
       maximumPendingMessages: 8,
       maximumPendingBytes: 1024,
+    );
+    final doneExpectation = expectLater(
+      stream.done.timeout(_deadline),
+      throwsA(
+        isA<NatsSlowConsumerException>().having(
+          (error) => error.message,
+          "message",
+          contains("3072 bytes"),
+        ),
+      ),
     );
     final delivered = <JetStreamDelivery>[];
     final errors = <Object>[];
@@ -225,16 +237,7 @@ void main() {
           "\$JS.ACK.EVENTS.WORKER.1.${index + 1}.${index + 1}.1.1000",
     );
 
-    await expectLater(
-      stream.done.timeout(_deadline),
-      throwsA(
-        isA<NatsSlowConsumerException>().having(
-          (error) => error.message,
-          "message",
-          contains("3072 bytes"),
-        ),
-      ),
-    );
+    await doneExpectation;
     expect(_pullCount(harness.peer), 1);
     expect(delivered, hasLength(1));
     final statistics = harness.connection.statistics;

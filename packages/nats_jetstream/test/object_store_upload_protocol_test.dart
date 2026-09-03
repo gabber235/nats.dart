@@ -116,6 +116,7 @@ void main() {
           return previous;
         },
       );
+      final failureResult = _commitFailure(upload);
 
       final metadata = await peer
           .nextPublication(r"$O.BUCKET.M.b2JqZWN0")
@@ -155,9 +156,7 @@ void main() {
         }),
       );
 
-      final failure = await _commitFailure(
-        upload,
-      ).timeout(const Duration(seconds: 2));
+      final failure = await failureResult.timeout(const Duration(seconds: 2));
       expect(failure.bucket, "BUCKET");
       expect(failure.name, "object");
       expect(failure.revision, BigInt.from(4));
@@ -189,6 +188,10 @@ void main() {
       metadata: JetStreamObjectMetadata(name: "object", chunkSize: 2),
       bytes: Stream.value(source),
       getInfo: (_, {showDeleted = false}) async => null,
+    );
+    final failure = expectLater(
+      upload,
+      throwsA(isA<JetStreamObjectPutException>()),
     );
 
     final first = await peer
@@ -225,7 +228,7 @@ void main() {
       encodeExactJson({"success": true}),
     );
 
-    await expectLater(upload, throwsA(isA<JetStreamObjectPutException>()));
+    await failure;
   });
 
   test("object chunk acknowledgement rejects stream sequence zero", () async {
@@ -250,6 +253,7 @@ void main() {
       bytes: Stream.value(const [1]),
       getInfo: (_, {showDeleted = false}) async => null,
     );
+    final failureResult = _putFailure(upload);
 
     final chunk = await peer
         .nextPublicationMatching(r"$O.BUCKET.C.*")
@@ -266,7 +270,7 @@ void main() {
       encodeExactJson({"success": true}),
     );
 
-    final failure = await _putFailure(upload);
+    final failure = await failureResult;
     expect(failure.metadataCommitAmbiguous, isFalse);
     expect(
       failure.cause,
@@ -303,6 +307,7 @@ void main() {
         getInfo: (_, {showDeleted = false}) async => null,
         mode: JetStreamObjectPutMode.experimentalFastIngest,
       );
+      final failureResult = _putFailure(upload);
 
       final first = await peer
           .nextPublicationMatching(r"$O.BUCKET.C.*")
@@ -340,7 +345,7 @@ void main() {
         encodeExactJson({"success": true}),
       );
 
-      final failure = await _putFailure(upload);
+      final failure = await failureResult;
       expect(failure.metadataCommitAmbiguous, isFalse);
       expect(failure.chunkUploadAmbiguous, isTrue);
       expect(
@@ -385,6 +390,7 @@ void main() {
       bytes: Stream.value(const [1]),
       getInfo: (_, {showDeleted = false}) async => null,
     );
+    final failureResult = _putFailure(upload);
 
     final chunk = await peer
         .nextPublicationMatching(r"$O.BUCKET.C.*")
@@ -410,7 +416,7 @@ void main() {
       encodeExactJson({"success": true}),
     );
 
-    final failure = await _putFailure(upload);
+    final failure = await failureResult;
     expect(failure.cause, isA<NatsNoRespondersException>());
     expect(failure.metadataCommitAmbiguous, isFalse);
     expect(failure.chunkUploadAmbiguous, isFalse);
@@ -440,6 +446,7 @@ void main() {
         bytes: Stream.value(const [1]),
         getInfo: (_, {showDeleted = false}) async => null,
       );
+      final failureResult = _putFailure(upload);
 
       final chunk = await peer
           .nextPublicationMatching(r"$O.BUCKET.C.*")
@@ -460,7 +467,7 @@ void main() {
         encodeExactJson({"success": true}),
       );
 
-      final failure = await _putFailure(upload);
+      final failure = await failureResult;
       expect(failure.cause, isA<NatsPublicationPreflightException>());
       expect(failure.metadataCommitAmbiguous, isFalse);
       expect(failure.chunkUploadAmbiguous, isFalse);
@@ -512,6 +519,7 @@ void main() {
         bytes: source(),
         getInfo: (_, {showDeleted = false}) async => null,
       );
+      final failureResult = _putFailure(upload);
 
       final chunk = await peer
           .nextPublicationMatching(r"$O.BUCKET.C.*")
@@ -550,7 +558,7 @@ void main() {
         encodeExactJson({"success": true}),
       );
 
-      final failure = await _putFailure(upload);
+      final failure = await failureResult;
       expect(
         failure.cause,
         isA<NatsPublicationGenerationException>()
@@ -596,9 +604,7 @@ void main() {
       "object",
       expectedGeneration: staleGeneration,
     );
-    await _replyWithStoredEmptyObject(peer);
-
-    await expectLater(
+    final failure = expectLater(
       deletion,
       throwsA(
         isA<NatsPublicationGenerationException>().having(
@@ -608,6 +614,9 @@ void main() {
         ),
       ),
     );
+    await _replyWithStoredEmptyObject(peer);
+
+    await failure;
     expect(
       peer.publications.where(
         (publication) => publication.subject == r"$O.BUCKET.M.b2JqZWN0",
@@ -639,9 +648,7 @@ void main() {
         JetStreamObjectMetadataUpdate(name: "object", description: "changed"),
         expectedGeneration: staleGeneration,
       );
-      await _replyWithStoredEmptyObject(peer);
-
-      await expectLater(
+      final failure = expectLater(
         update,
         throwsA(
           isA<NatsPublicationGenerationException>().having(
@@ -651,6 +658,9 @@ void main() {
           ),
         ),
       );
+      await _replyWithStoredEmptyObject(peer);
+
+      await failure;
       expect(
         peer.publications.where(
           (publication) => publication.subject == r"$O.BUCKET.M.b2JqZWN0",

@@ -39,6 +39,16 @@ void main() {
 
     for (final returned in [BigInt.from(8), BigInt.zero]) {
       final result = bucket.getRevision("key", BigInt.from(7));
+      final expectation = expectLater(
+        result,
+        throwsA(
+          isA<JetStreamProtocolException>().having(
+            (error) => error.fieldPath,
+            "fieldPath",
+            "message.seq",
+          ),
+        ),
+      );
       final request = await peer.nextPublication(
         r"$JS.API.STREAM.MSG.GET.KV_BUCKET",
       );
@@ -54,16 +64,7 @@ void main() {
           },
         }),
       );
-      await expectLater(
-        result,
-        throwsA(
-          isA<JetStreamProtocolException>().having(
-            (error) => error.fieldPath,
-            "fieldPath",
-            "message.seq",
-          ),
-        ),
-      );
+      await expectation;
     }
   });
 }

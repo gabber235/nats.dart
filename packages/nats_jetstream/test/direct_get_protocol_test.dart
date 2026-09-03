@@ -29,6 +29,10 @@ void main() {
     );
 
     final messageResult = direct.get("EVENTS", BigInt.from(7));
+    final messageExpectation = expectLater(
+      messageResult,
+      _sequenceProtocolFailure,
+    );
     final messageRequest = await peer.nextPublication(
       r"$JS.API.DIRECT.GET.EVENTS",
     );
@@ -36,9 +40,13 @@ void main() {
     await peer.sendHeaderMessage(messageRequest.replySubject!, const [
       1,
     ], _directHeaders("8").encode());
-    await expectLater(messageResult, _sequenceProtocolFailure);
+    await messageExpectation;
 
     final payloadResult = direct.getPayload("EVENTS", BigInt.from(9));
+    final payloadExpectation = expectLater(
+      payloadResult,
+      _sequenceProtocolFailure,
+    );
     final payloadRequest = await peer.nextPublication(
       r"$JS.API.DIRECT.GET.EVENTS",
     );
@@ -46,7 +54,7 @@ void main() {
     await peer.sendHeaderMessage(payloadRequest.replySubject!, const [
       2,
     ], _directHeaders("10").encode());
-    await expectLater(payloadResult, _sequenceProtocolFailure);
+    await payloadExpectation;
 
     final nextResult = direct.getNext(
       "EVENTS",
@@ -66,18 +74,23 @@ void main() {
       "events.>",
       startSequence: BigInt.from(15),
     );
+    final earlyExpectation = expectLater(earlyResult, _sequenceProtocolFailure);
     final earlyRequest = await peer.nextPublication(
       r"$JS.API.DIRECT.GET.EVENTS",
     );
     await peer.sendHeaderMessage(earlyRequest.replySubject!, const [
       4,
     ], _directHeaders("14", subject: "events.eu").encode());
-    await expectLater(earlyResult, _sequenceProtocolFailure);
+    await earlyExpectation;
 
     final wrongSubjectResult = direct.getNext(
       "EVENTS",
       "events.*",
       startSequence: BigInt.from(16),
+    );
+    final wrongSubjectExpectation = expectLater(
+      wrongSubjectResult,
+      _subjectProtocolFailure,
     );
     final wrongSubjectRequest = await peer.nextPublication(
       r"$JS.API.DIRECT.GET.EVENTS",
@@ -85,25 +98,30 @@ void main() {
     await peer.sendHeaderMessage(wrongSubjectRequest.replySubject!, const [
       5,
     ], _directHeaders("17", subject: "metrics.cpu").encode());
-    await expectLater(wrongSubjectResult, _subjectProtocolFailure);
+    await wrongSubjectExpectation;
 
     final lastResult = direct.getLast("EVENTS", "events.*");
+    final lastExpectation = expectLater(lastResult, _subjectProtocolFailure);
     final lastRequest = await peer.nextPublication(
       r"$JS.API.DIRECT.GET.EVENTS",
     );
     await peer.sendHeaderMessage(lastRequest.replySubject!, const [
       6,
     ], _directHeaders("18", subject: "events.eu.extra").encode());
-    await expectLater(lastResult, _subjectProtocolFailure);
+    await lastExpectation;
 
     final endpointResult = direct.getLastBySubject("EVENTS", "events.eu");
+    final endpointExpectation = expectLater(
+      endpointResult,
+      _subjectProtocolFailure,
+    );
     final endpointRequest = await peer.nextPublication(
       r"$JS.API.DIRECT.GET.EVENTS.events.eu",
     );
     await peer.sendHeaderMessage(endpointRequest.replySubject!, const [
       7,
     ], _directHeaders("19", subject: "events.us").encode());
-    await expectLater(endpointResult, _subjectProtocolFailure);
+    await endpointExpectation;
   });
 
   test("direct batches bind every returned subject selector", () async {
@@ -134,20 +152,7 @@ void main() {
         nextBySubject: "events.>",
       ),
     );
-    final wrongRequest = await peer.nextPublication(
-      r"$JS.API.DIRECT.GET.EVENTS",
-    );
-    await peer.sendHeaderMessage(
-      wrongRequest.replySubject!,
-      const [1],
-      _directHeaders(
-        "11",
-        subject: "metrics.cpu",
-        lastSequence: "0",
-        pending: "0",
-      ).encode(),
-    );
-    await expectLater(
+    final wrongExpectation = expectLater(
       wrongResult,
       throwsA(
         isA<JetStreamDirectBatchException>().having(
@@ -161,6 +166,20 @@ void main() {
         ),
       ),
     );
+    final wrongRequest = await peer.nextPublication(
+      r"$JS.API.DIRECT.GET.EVENTS",
+    );
+    await peer.sendHeaderMessage(
+      wrongRequest.replySubject!,
+      const [1],
+      _directHeaders(
+        "11",
+        subject: "metrics.cpu",
+        lastSequence: "0",
+        pending: "0",
+      ).encode(),
+    );
+    await wrongExpectation;
 
     final anyResult = direct.batch(
       "EVENTS",

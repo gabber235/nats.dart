@@ -146,6 +146,7 @@ void main() {
     expect(await write, BigInt.two);
 
     final malformed = mirror.getString("invalid");
+    final malformedFailure = expectLater(malformed, throwsFormatException);
     final invalid = await harness.peer.nextPublication(
       r"$JS.API.STREAM.MSG.GET.KV_MIRROR",
     );
@@ -155,7 +156,7 @@ void main() {
         _stored("SOURCE", "invalid", const [0xc3, 0x28], BigInt.two),
       ),
     );
-    await expectLater(malformed, throwsFormatException);
+    await malformedFailure;
   });
 
   test("sources normalize without mutating callers", () async {
@@ -419,14 +420,7 @@ void main() {
     final denied = manager.createOrUpdate(
       JetStreamKeyValueBucketConfig(name: "DENIED"),
     );
-    final deniedInfo = await harness.peer.nextPublication(
-      r"$JS.API.STREAM.INFO.KV_DENIED",
-    );
-    await harness.peer.sendMessage(
-      deniedInfo.replySubject!,
-      _apiError(403, 10058, "stream name already in use"),
-    );
-    await expectLater(
+    final deniedFailure = expectLater(
       denied,
       throwsA(
         isA<JetStreamApiException>().having(
@@ -436,6 +430,14 @@ void main() {
         ),
       ),
     );
+    final deniedInfo = await harness.peer.nextPublication(
+      r"$JS.API.STREAM.INFO.KV_DENIED",
+    );
+    await harness.peer.sendMessage(
+      deniedInfo.replySubject!,
+      _apiError(403, 10058, "stream name already in use"),
+    );
+    await deniedFailure;
     expect(
       harness.peer.publications.where(
         (publication) =>

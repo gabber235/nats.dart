@@ -37,6 +37,16 @@ void main() {
           .consume();
       final errors = <Object>[];
       final listener = ordered.messages.listen((_) {}, onError: errors.add);
+      final doneFailure = expectLater(
+        ordered.done.timeout(_deadline),
+        throwsA(
+          isA<JetStreamOrderedConsumerRecoveryException>().having(
+            (error) => error.cause,
+            "cause",
+            isA<NatsTimeoutException>(),
+          ),
+        ),
+      );
 
       final create = await harness.peer.nextPublicationMatching(
         r"$JS.API.CONSUMER.CREATE.EVENTS.*",
@@ -57,16 +67,7 @@ void main() {
       );
       serverConsumers.remove(consumer);
 
-      await expectLater(
-        ordered.done.timeout(_deadline),
-        throwsA(
-          isA<JetStreamOrderedConsumerRecoveryException>().having(
-            (error) => error.cause,
-            "cause",
-            isA<NatsTimeoutException>(),
-          ),
-        ),
-      );
+      await doneFailure;
       await listener.cancel();
       expect(serverConsumers, isEmpty);
       expect(
@@ -103,6 +104,16 @@ void main() {
     final pending = publisher.publish("events", const [
       1,
     ], options: JetStreamPublishOptions(messageId: "stable"));
+    final acknowledgementFailure = expectLater(
+      pending.acknowledgement.timeout(_deadline),
+      throwsA(
+        isA<JetStreamAsyncPublishException>().having(
+          (error) => error.cause,
+          "cause",
+          isA<NatsClosedException>(),
+        ),
+      ),
+    );
     final first = await harness.peer.nextPublication("events");
     await harness.peer.sendMessage(
       first.replySubject!,
@@ -118,16 +129,7 @@ void main() {
 
     await harness.connection.close();
 
-    await expectLater(
-      pending.acknowledgement.timeout(_deadline),
-      throwsA(
-        isA<JetStreamAsyncPublishException>().having(
-          (error) => error.cause,
-          "cause",
-          isA<NatsClosedException>(),
-        ),
-      ),
-    );
+    await acknowledgementFailure;
     expect(pending.attempts, 1);
   });
 
@@ -396,6 +398,18 @@ void main() {
       );
       final events = StreamIterator(watch.events);
       final firstEvent = events.moveNext();
+      final doneFailure = expectLater(
+        watch.done,
+        throwsA(
+          isA<JetStreamInitialSnapshotInterruptedException>()
+              .having((error) => error.operation, "operation", "test watch")
+              .having(
+                (error) => error.lastRevision,
+                "lastRevision",
+                BigInt.one,
+              ),
+        ),
+      );
       final inbox = await harness.peer.nextSubscription("_INBOX.*");
       final create = await harness.peer.nextPublicationMatching(
         r"$JS.API.CONSUMER.CREATE.WATCH.*",
@@ -413,18 +427,7 @@ void main() {
 
       await harness.peer.disconnectClient();
 
-      await expectLater(
-        watch.done,
-        throwsA(
-          isA<JetStreamInitialSnapshotInterruptedException>()
-              .having((error) => error.operation, "operation", "test watch")
-              .having(
-                (error) => error.lastRevision,
-                "lastRevision",
-                BigInt.one,
-              ),
-        ),
-      );
+      await doneFailure;
       await events.cancel();
     },
   );
@@ -455,6 +458,16 @@ void main() {
     final delivered = <int>[];
     final errors = <Object>[];
     final listener = watch.events.listen(delivered.add, onError: errors.add);
+    final doneFailure = expectLater(
+      watch.done,
+      throwsA(
+        isA<JetStreamProtocolException>().having(
+          (error) => error.fieldPath,
+          "fieldPath",
+          "consumer",
+        ),
+      ),
+    );
     addTearDown(listener.cancel);
     final inbox = await harness.peer.nextSubscription("_INBOX.*");
     final create = await harness.peer.nextPublicationMatching(
@@ -476,16 +489,7 @@ void main() {
       encodeExactJson({"success": true}),
     );
 
-    await expectLater(
-      watch.done,
-      throwsA(
-        isA<JetStreamProtocolException>().having(
-          (error) => error.fieldPath,
-          "fieldPath",
-          "consumer",
-        ),
-      ),
-    );
+    await doneFailure;
     expect(delivered, isEmpty);
     expect(errors, [isA<JetStreamProtocolException>()]);
     expect(
@@ -517,6 +521,10 @@ void main() {
     );
     addTearDown(owner.close);
     final opening = owner.open(const JetStreamConsumerStart.all());
+    final openingFailure = expectLater(
+      opening,
+      throwsA(isA<JetStreamApiException>()),
+    );
 
     final inbox = await harness.peer
         .nextSubscription("_INBOX.*")
@@ -543,7 +551,7 @@ void main() {
       encodeExactJson({"success": true}),
     );
 
-    await expectLater(opening, throwsA(isA<JetStreamApiException>()));
+    await openingFailure;
     await expectLater(
       harness.peer.sendMessage(inbox, const [1]),
       throwsA(isA<StateError>()),
@@ -652,14 +660,15 @@ void main() {
     );
     final errors = <Object>[];
     final listener = watch.events.listen((_) {}, onError: errors.add);
+    final doneFailure = expectLater(
+      watch.done.timeout(_deadline),
+      throwsA(isA<NatsClosedException>()),
+    );
 
     final close = harness.connection.close();
 
     await close.timeout(_deadline);
-    await expectLater(
-      watch.done.timeout(_deadline),
-      throwsA(isA<NatsClosedException>()),
-    );
+    await doneFailure;
     expect(errors, [isA<NatsClosedException>()]);
     await listener.cancel();
   });

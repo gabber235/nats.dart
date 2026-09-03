@@ -145,6 +145,10 @@ void main() {
     final manager = JetStreamContext(harness.connection).objectStore;
 
     final result = manager.list().toList();
+    final failure = expectLater(
+      result,
+      throwsA(isA<JetStreamProtocolException>()),
+    );
     final request = await harness.peer.nextPublication(r"$JS.API.STREAM.LIST");
     await harness.peer.sendMessage(
       request.replySubject!,
@@ -163,7 +167,7 @@ void main() {
       }),
     );
 
-    await expectLater(result, throwsA(isA<JetStreamProtocolException>()));
+    await failure;
   });
 
   test("status rejects malformed age and compression values", () {
@@ -228,6 +232,16 @@ void main() {
     final result = manager.createOrUpdate(
       JetStreamObjectStoreConfig(name: "DENIED"),
     );
+    final failure = expectLater(
+      result,
+      throwsA(
+        isA<JetStreamApiException>().having(
+          (error) => error.errorCode,
+          "errorCode",
+          10058,
+        ),
+      ),
+    );
 
     final info = await harness.peer.nextPublication(
       r"$JS.API.STREAM.INFO.OBJ_DENIED",
@@ -243,16 +257,7 @@ void main() {
       }),
     );
 
-    await expectLater(
-      result,
-      throwsA(
-        isA<JetStreamApiException>().having(
-          (error) => error.errorCode,
-          "errorCode",
-          10058,
-        ),
-      ),
-    );
+    await failure;
     expect(
       harness.peer.publications.where(
         (value) => value.subject == r"$JS.API.STREAM.CREATE.OBJ_DENIED",

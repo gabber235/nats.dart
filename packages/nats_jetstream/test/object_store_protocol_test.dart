@@ -32,14 +32,7 @@ void main() {
 
     for (final sequence in [BigInt.zero, BigInt.one << 64]) {
       final result = protocol.getStored({"seq": BigInt.one});
-      final request = await peer.nextPublication(
-        r"$JS.API.STREAM.MSG.GET.OBJ_FILES",
-      );
-      await peer.sendMessage(
-        request.replySubject!,
-        encodeExactJson(_stored(sequence)),
-      );
-      await expectLater(
+      final resultExpectation = expectLater(
         result,
         throwsA(
           isA<JetStreamProtocolException>().having(
@@ -49,6 +42,14 @@ void main() {
           ),
         ),
       );
+      final request = await peer.nextPublication(
+        r"$JS.API.STREAM.MSG.GET.OBJ_FILES",
+      );
+      await peer.sendMessage(
+        request.replySubject!,
+        encodeExactJson(_stored(sequence)),
+      );
+      await resultExpectation;
     }
 
     final maximum = (BigInt.one << 64) - BigInt.one;

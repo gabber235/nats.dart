@@ -16,11 +16,12 @@ void main() {
     final result = harness.publish(
       gapPolicy: JetStreamFastBatchGapPolicy.allow,
     );
+    final failureResult = _failure(result);
     final first = await harness.nextPublication();
 
     await harness.sendControl(first, '{"type":"gap","last_seq":1,"seq":2}');
 
-    final failure = await _failure(result);
+    final failure = await failureResult;
     expect(
       failure.cause,
       isA<NatsProtocolException>().having(
@@ -39,11 +40,12 @@ void main() {
       final result = harness.publish(
         gapPolicy: JetStreamFastBatchGapPolicy.allow,
       );
+      final failureResult = _failure(result);
       final first = await harness.nextPublication();
 
       await harness.sendControl(first, _errorControl(sequence: 2));
 
-      final failure = await _failure(result);
+      final failure = await failureResult;
       expect(
         failure.cause,
         isA<NatsProtocolException>().having(
@@ -59,12 +61,13 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
     final result = harness.publish();
+    final failureResult = _failure(result);
     final first = await harness.nextPublication();
     expect(first.replySubject, endsWith(r".0.$FI"));
 
     await harness.sendControl(first, _errorControl(sequence: 1));
 
-    final failure = await _failure(result);
+    final failure = await failureResult;
     expect(failure.sentSequence, BigInt.one);
     expect(failure.acknowledgedSequence, BigInt.zero);
     expect(failure.ambiguous, isFalse);
@@ -82,6 +85,7 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
     final result = harness.publish();
+    final failureResult = _failure(result);
     final first = await harness.nextPublication();
     expect(first.replySubject, endsWith(r".0.$FI"));
 
@@ -91,7 +95,7 @@ void main() {
       '"description":"disabled"}}',
     );
 
-    final failure = await _failure(result);
+    final failure = await failureResult;
     expect(failure.sentSequence, BigInt.one);
     expect(failure.acknowledgedSequence, BigInt.zero);
     expect(failure.ambiguous, isFalse);
@@ -109,13 +113,14 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
     final result = harness.publish();
+    final failureResult = _failure(result);
     final first = await harness.nextPublication();
     await harness.sendControl(first, '{"type":"ack","seq":1,"msgs":1}');
     final finalMessage = await harness.nextPublication();
 
     await harness.sendControl(finalMessage, _errorControl(sequence: 2));
 
-    final failure = await _failure(result);
+    final failure = await failureResult;
     expect(failure.sentSequence, BigInt.from(2));
     expect(failure.acknowledgedSequence, BigInt.one);
     expect(failure.ambiguous, isTrue);

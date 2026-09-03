@@ -238,7 +238,10 @@ final class _Fixture {
 
   static Future<_Fixture> create() async {
     final root = await Directory.systemTemp.createTemp("nats-native-cache-");
-    return _Fixture._(root, File("${root.path}/nats-server.tar.gz"));
+    return _Fixture._(
+      root,
+      File.fromUri(root.uri.resolve("nats-server.tar.gz")),
+    );
   }
 
   Future<void> close() => root.delete(recursive: true);

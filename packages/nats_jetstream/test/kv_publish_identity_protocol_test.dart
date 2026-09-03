@@ -36,15 +36,7 @@ void main() {
     );
 
     final result = bucket.put("key", const [1]);
-    final publication = await peer.nextPublication(r"$KV.BUCKET.key");
-    final headers = NatsHeaders.parse(publication.headerBytes);
-    expect(headers.first("Nats-Expected-Stream"), "KV_BUCKET");
-    await peer.sendMessage(
-      publication.replySubject!,
-      encodeExactJson({"stream": "OTHER", "seq": BigInt.one}),
-    );
-
-    await expectLater(
+    final expectation = expectLater(
       result,
       throwsA(
         isA<JetStreamProtocolException>().having(
@@ -54,6 +46,15 @@ void main() {
         ),
       ),
     );
+    final publication = await peer.nextPublication(r"$KV.BUCKET.key");
+    final headers = NatsHeaders.parse(publication.headerBytes);
+    expect(headers.first("Nats-Expected-Stream"), "KV_BUCKET");
+    await peer.sendMessage(
+      publication.replySubject!,
+      encodeExactJson({"stream": "OTHER", "seq": BigInt.one}),
+    );
+
+    await expectation;
   });
 
   test("KV mutation rejects acknowledgement sequence zero", () async {
@@ -83,13 +84,7 @@ void main() {
     );
 
     final result = bucket.put("key", const [1]);
-    final publication = await peer.nextPublication(r"$KV.BUCKET.key");
-    await peer.sendMessage(
-      publication.replySubject!,
-      encodeExactJson({"stream": "KV_BUCKET", "seq": BigInt.zero}),
-    );
-
-    await expectLater(
+    final expectation = expectLater(
       result,
       throwsA(
         isA<JetStreamProtocolException>().having(
@@ -99,6 +94,13 @@ void main() {
         ),
       ),
     );
+    final publication = await peer.nextPublication(r"$KV.BUCKET.key");
+    await peer.sendMessage(
+      publication.replySubject!,
+      encodeExactJson({"stream": "KV_BUCKET", "seq": BigInt.zero}),
+    );
+
+    await expectation;
   });
 
   test("domain KV expectation names the stored subject", () async {

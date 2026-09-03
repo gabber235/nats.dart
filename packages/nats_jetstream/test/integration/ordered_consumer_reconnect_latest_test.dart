@@ -181,6 +181,10 @@ void main() {
               maximumPendingBytes: 1024,
             ),
           );
+      final doneExpectation = expectLater(
+        ordered.done.timeout(const Duration(seconds: 5)),
+        throwsA(isA<NatsException>()),
+      );
       messages = StreamIterator(ordered.messages);
       expect(await messages.moveNext(), isTrue);
       expect(messages.current.message.payload, [1]);
@@ -195,10 +199,7 @@ void main() {
 
       await connection.close();
       connection = null;
-      await expectLater(
-        ordered.done.timeout(const Duration(seconds: 5)),
-        throwsA(isA<NatsException>()),
-      );
+      await doneExpectation;
       await expectLater(messages.moveNext(), throwsA(isA<NatsException>()));
       ordered = null;
       messages = null;

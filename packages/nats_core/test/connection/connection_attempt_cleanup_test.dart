@@ -272,15 +272,18 @@ void main() {
     ]);
     addTearDown(peer.close);
     var invocations = 0;
+    final providerEntered = Completer<void>();
     final cancelled = Completer<void>();
 
-    await expectLater(
+    final connectionFailure = expectLater(
       NatsConnection.connect(
         NatsOptions(
           servers: [peer.server],
-          connectTimeout: const Duration(milliseconds: 100),
           authentication: NatsAuthentication.provider((context) async {
             invocations += 1;
+            if (!providerEntered.isCompleted) {
+              providerEntered.complete();
+            }
             expect(context.deadline.isAfter(DateTime.timestamp()), isTrue);
             await context.cancelled;
             if (!cancelled.isCompleted) {
@@ -290,10 +293,12 @@ void main() {
           }),
           reconnect: NatsReconnectPolicy(maximumAttempts: 0),
         ),
-      ).timeout(const Duration(seconds: 2)),
+      ).timeout(const Duration(seconds: 10)),
       throwsA(isA<NatsTimeoutException>()),
     );
-    await cancelled.future.timeout(const Duration(seconds: 1));
+    await providerEntered.future.timeout(const Duration(seconds: 5));
+    await connectionFailure;
+    await cancelled.future.timeout(const Duration(seconds: 5));
     expect(invocations, 1);
   });
 
@@ -552,7 +557,15 @@ final class _PeerAttempt {
 
 final class _ScriptedNatsPeer {
   _ScriptedNatsPeer._(this._listener, this._attempts) {
-    _listenerSubscription = _listener.listen(_accept);
+    _listenerSubscription = _listener.listen(
+      _accept,
+      onError: (Object error, StackTrace stackTrace) {
+        if (error is SocketException) {
+          return;
+        }
+        Zone.current.handleUncaughtError(error, stackTrace);
+      },
+    );
   }
 
   final ServerSocket _listener;

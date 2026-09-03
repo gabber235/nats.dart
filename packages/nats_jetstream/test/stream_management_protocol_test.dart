@@ -56,15 +56,7 @@ void main() {
 
     for (final returned in [BigInt.two, BigInt.zero]) {
       final result = jetStream.getMessage("EVENTS", BigInt.one);
-      final request = await harness.peer.nextPublication(
-        r"$JS.API.STREAM.MSG.GET.EVENTS",
-      );
-      expect(decodeExactJsonObject(request.body), {"seq": BigInt.one});
-      await harness.peer.sendMessage(
-        request.replySubject!,
-        encodeExactJson(_stored("events.one", returned)),
-      );
-      await expectLater(
+      final expectation = expectLater(
         result,
         throwsA(
           isA<JetStreamProtocolException>().having(
@@ -74,6 +66,15 @@ void main() {
           ),
         ),
       );
+      final request = await harness.peer.nextPublication(
+        r"$JS.API.STREAM.MSG.GET.EVENTS",
+      );
+      expect(decodeExactJsonObject(request.body), {"seq": BigInt.one});
+      await harness.peer.sendMessage(
+        request.replySubject!,
+        encodeExactJson(_stored("events.one", returned)),
+      );
+      await expectation;
     }
   });
 
@@ -107,6 +108,7 @@ void main() {
     expect((await matchingNextResult).subject, "events.eu.created");
 
     final lastResult = jetStream.getLastMessage("EVENTS", "events.*");
+    final lastExpectation = expectLater(lastResult, _subjectProtocolFailure);
     final last = await harness.peer.nextPublication(
       r"$JS.API.STREAM.MSG.GET.EVENTS",
     );
@@ -115,13 +117,14 @@ void main() {
       last.replySubject!,
       encodeExactJson(_stored("events.eu.extra", BigInt.one)),
     );
-    await expectLater(lastResult, _subjectProtocolFailure);
+    await lastExpectation;
 
     final nextResult = jetStream.getNextMessage(
       "EVENTS",
       "events.>",
       BigInt.from(4),
     );
+    final nextExpectation = expectLater(nextResult, _subjectProtocolFailure);
     final next = await harness.peer.nextPublication(
       r"$JS.API.STREAM.MSG.GET.EVENTS",
     );
@@ -133,7 +136,7 @@ void main() {
       next.replySubject!,
       encodeExactJson(_stored("other.eu", BigInt.from(5))),
     );
-    await expectLater(nextResult, _subjectProtocolFailure);
+    await nextExpectation;
   });
 
   test("stream pages and purge reject schema integer overflow", () async {
@@ -144,6 +147,10 @@ void main() {
     final uint64Overflow = BigInt.one << 64;
 
     final listResult = streams.listPage();
+    final listExpectation = expectLater(
+      listResult,
+      throwsA(_protocolField("total")),
+    );
     final listRequest = await harness.peer.nextPublication(
       r"$JS.API.STREAM.LIST",
     );
@@ -156,9 +163,13 @@ void main() {
         "streams": const <Object?>[],
       }),
     );
-    await expectLater(listResult, throwsA(_protocolField("total")));
+    await listExpectation;
 
     final namesResult = streams.namesPage();
+    final namesExpectation = expectLater(
+      namesResult,
+      throwsA(_protocolField("limit")),
+    );
     final namesRequest = await harness.peer.nextPublication(
       r"$JS.API.STREAM.NAMES",
     );
@@ -171,9 +182,13 @@ void main() {
         "streams": const <String>[],
       }),
     );
-    await expectLater(namesResult, throwsA(_protocolField("limit")));
+    await namesExpectation;
 
     final purgeResult = streams.purge("EVENTS");
+    final purgeExpectation = expectLater(
+      purgeResult,
+      throwsA(_protocolField("purged")),
+    );
     final purgeRequest = await harness.peer.nextPublication(
       r"$JS.API.STREAM.PURGE.EVENTS",
     );
@@ -181,7 +196,7 @@ void main() {
       purgeRequest.replySubject!,
       encodeExactJson({"success": true, "purged": uint64Overflow}),
     );
-    await expectLater(purgeResult, throwsA(_protocolField("purged")));
+    await purgeExpectation;
   });
 
   test(

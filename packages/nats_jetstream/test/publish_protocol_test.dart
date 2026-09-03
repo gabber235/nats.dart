@@ -82,6 +82,16 @@ void main() {
           entries: const [MapEntry("Nats-Expected-Stream", "ORDERS")],
         ),
       );
+      final expectation = expectLater(
+        result,
+        throwsA(
+          isA<JetStreamProtocolException>().having(
+            (error) => error.fieldPath,
+            "fieldPath",
+            "stream",
+          ),
+        ),
+      );
       final publication = await harness.peer.nextPublication("orders.one");
       expect(
         NatsHeaders.parse(
@@ -94,16 +104,7 @@ void main() {
         encodeExactJson({"stream": "OTHER", "seq": BigInt.one}),
       );
 
-      await expectLater(
-        result,
-        throwsA(
-          isA<JetStreamProtocolException>().having(
-            (error) => error.fieldPath,
-            "fieldPath",
-            "stream",
-          ),
-        ),
-      );
+      await expectation;
     },
   );
 
@@ -126,13 +127,7 @@ void main() {
           entries: const [MapEntry("Nats-Expected-Stream", "ORDERS")],
         ),
       );
-      final publication = await harness.peer.nextPublication("orders.async");
-      await harness.peer.sendMessage(
-        publication.replySubject!,
-        encodeExactJson({"stream": "OTHER", "seq": BigInt.one}),
-      );
-
-      await expectLater(
+      final acknowledgementExpectation = expectLater(
         pending.acknowledgement,
         throwsA(
           isA<JetStreamAsyncPublishException>()
@@ -152,6 +147,13 @@ void main() {
               ),
         ),
       );
+      final publication = await harness.peer.nextPublication("orders.async");
+      await harness.peer.sendMessage(
+        publication.replySubject!,
+        encodeExactJson({"stream": "OTHER", "seq": BigInt.one}),
+      );
+
+      await acknowledgementExpectation;
       expect(pending.state, JetStreamAsyncPublishState.failed);
       try {
         await publisher.drain();
@@ -211,6 +213,16 @@ void main() {
       final harness = await _Harness.open();
       addTearDown(harness.close);
       final result = scenario.start(JetStreamContext(harness.connection));
+      final expectation = expectLater(
+        result,
+        throwsA(
+          isA<JetStreamProtocolException>().having(
+            (error) => error.fieldPath,
+            "fieldPath",
+            "stream",
+          ),
+        ),
+      );
       final publication = await harness.peer.nextPublication(scenario.subject);
       expect(
         NatsHeaders.parse(
@@ -227,16 +239,7 @@ void main() {
         }),
       );
 
-      await expectLater(
-        result,
-        throwsA(
-          isA<JetStreamProtocolException>().having(
-            (error) => error.fieldPath,
-            "fieldPath",
-            "stream",
-          ),
-        ),
-      );
+      await expectation;
     });
   }
 

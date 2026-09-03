@@ -25,6 +25,10 @@ void main() {
 
     for (final operation in operations) {
       final result = operation();
+      final expectation = expectLater(
+        result,
+        throwsA(_protocolField("config.name")),
+      );
       final request = await harness.peer.nextPublicationMatching(
         r"$JS.API.STREAM.*.EXPECTED",
       );
@@ -32,7 +36,7 @@ void main() {
         request.replySubject!,
         encodeExactJson(_streamInfo("OTHER")),
       );
-      await expectLater(result, throwsA(_protocolField("config.name")));
+      await expectation;
     }
   });
 
@@ -42,6 +46,10 @@ void main() {
     final consumers = JetStreamContext(harness.connection).consumers;
 
     final infoResult = consumers.info("EVENTS", "WORKER");
+    final infoExpectation = expectLater(
+      infoResult,
+      throwsA(_protocolField("stream_name")),
+    );
     final infoRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.INFO.EVENTS.WORKER",
     );
@@ -49,9 +57,13 @@ void main() {
       infoRequest.replySubject!,
       encodeExactJson(_consumerInfo("OTHER", "WORKER", "WORKER")),
     );
-    await expectLater(infoResult, throwsA(_protocolField("stream_name")));
+    await infoExpectation;
 
     final pullResult = consumers.pull("EVENTS", "WORKER");
+    final pullExpectation = expectLater(
+      pullResult,
+      throwsA(_protocolField("name")),
+    );
     final pullRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.INFO.EVENTS.WORKER",
     );
@@ -59,9 +71,13 @@ void main() {
       pullRequest.replySubject!,
       encodeExactJson(_consumerInfo("EVENTS", "OTHER", "OTHER")),
     );
-    await expectLater(pullResult, throwsA(_protocolField("name")));
+    await pullExpectation;
 
     final resetResult = consumers.reset("EVENTS", "WORKER");
+    final resetExpectation = expectLater(
+      resetResult,
+      throwsA(_protocolField("config.name")),
+    );
     final resetRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.RESET.EVENTS.WORKER",
     );
@@ -72,11 +88,15 @@ void main() {
         ..._consumerInfo("EVENTS", "WORKER", "OTHER"),
       }),
     );
-    await expectLater(resetResult, throwsA(_protocolField("config.name")));
+    await resetExpectation;
 
     final createResult = consumers.createPull(
       "EVENTS",
       JetStreamPullConsumerConfig(name: "WORKER"),
+    );
+    final createExpectation = expectLater(
+      createResult,
+      throwsA(_protocolField("config.name")),
     );
     final createRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.CREATE.EVENTS.WORKER",
@@ -85,7 +105,7 @@ void main() {
       createRequest.replySubject!,
       encodeExactJson(_consumerInfo("EVENTS", "WORKER", "OTHER")),
     );
-    await expectLater(createResult, throwsA(_protocolField("config.name")));
+    await createExpectation;
   });
 
   test(
@@ -96,6 +116,10 @@ void main() {
       final streams = JetStreamContext(harness.connection).streams;
 
       final stepDown = streams.requestLeaderStepDown("EXPECTED");
+      final stepDownExpectation = expectLater(
+        stepDown,
+        throwsA(_protocolField("config.name")),
+      );
       final stepDownInfo = await harness.peer.nextPublication(
         r"$JS.API.STREAM.INFO.EXPECTED",
       );
@@ -103,9 +127,13 @@ void main() {
         stepDownInfo.replySubject!,
         encodeExactJson(_streamInfo("OTHER")),
       );
-      await expectLater(stepDown, throwsA(_protocolField("config.name")));
+      await stepDownExpectation;
 
       final remove = streams.removePeer("EXPECTED", "S1");
+      final removeExpectation = expectLater(
+        remove,
+        throwsA(_protocolField("config.name")),
+      );
       final removeInfo = await harness.peer.nextPublication(
         r"$JS.API.STREAM.INFO.EXPECTED",
       );
@@ -113,7 +141,7 @@ void main() {
         removeInfo.replySubject!,
         encodeExactJson(_streamInfo("OTHER")),
       );
-      await expectLater(remove, throwsA(_protocolField("config.name")));
+      await removeExpectation;
 
       expect(
         harness.peer.publications.where(
@@ -138,6 +166,10 @@ void main() {
     final uint64Overflow = BigInt.one << 64;
 
     final listResult = consumers.listPage("EVENTS");
+    final listExpectation = expectLater(
+      listResult,
+      throwsA(_protocolField("total")),
+    );
     final listRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.LIST.EVENTS",
     );
@@ -150,9 +182,13 @@ void main() {
         "consumers": const <Object?>[],
       }),
     );
-    await expectLater(listResult, throwsA(_protocolField("total")));
+    await listExpectation;
 
     final namesResult = consumers.namesPage("EVENTS");
+    final namesExpectation = expectLater(
+      namesResult,
+      throwsA(_protocolField("offset")),
+    );
     final namesRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.NAMES.EVENTS",
     );
@@ -165,9 +201,13 @@ void main() {
         "consumers": const <String>[],
       }),
     );
-    await expectLater(namesResult, throwsA(_protocolField("offset")));
+    await namesExpectation;
 
     final resetResult = consumers.reset("EVENTS", "WORKER");
+    final resetExpectation = expectLater(
+      resetResult,
+      throwsA(_protocolField("reset_seq")),
+    );
     final resetRequest = await harness.peer.nextPublication(
       r"$JS.API.CONSUMER.RESET.EVENTS.WORKER",
     );
@@ -178,7 +218,7 @@ void main() {
         ..._consumerInfo("EVENTS", "WORKER", "WORKER"),
       }),
     );
-    await expectLater(resetResult, throwsA(_protocolField("reset_seq")));
+    await resetExpectation;
   });
 
   test("consumer filters are preflighted against stream subjects", () async {
@@ -196,6 +236,7 @@ void main() {
         ]),
       ),
     );
+    final rejectedExpectation = expectLater(rejected, throwsArgumentError);
     final rejectedInfo = await harness.peer.nextPublication(
       r"$JS.API.STREAM.INFO.EVENTS",
     );
@@ -203,7 +244,7 @@ void main() {
       rejectedInfo.replySubject!,
       encodeExactJson(_streamInfo("EVENTS")),
     );
-    await expectLater(rejected, throwsArgumentError);
+    await rejectedExpectation;
     expect(
       harness.peer.publications.where(
         (publication) => publication.subject.contains("CONSUMER.CREATE"),
@@ -250,6 +291,16 @@ void main() {
       "EVENTS",
       JetStreamPullConsumerConfig(name: "BOUNDED", filters: filters),
     );
+    final rejectedExpectation = expectLater(
+      rejected,
+      throwsA(
+        isA<ArgumentError>().having(
+          (error) => error.message,
+          "message",
+          contains("work exceeds"),
+        ),
+      ),
+    );
     final infoRequest = await harness.peer.nextPublication(
       r"$JS.API.STREAM.INFO.EVENTS",
     );
@@ -266,16 +317,7 @@ void main() {
       ),
     );
 
-    await expectLater(
-      rejected,
-      throwsA(
-        isA<ArgumentError>().having(
-          (error) => error.message,
-          "message",
-          contains("work exceeds"),
-        ),
-      ),
-    );
+    await rejectedExpectation;
     expect(
       harness.peer.publications.where(
         (publication) => publication.subject.contains("CONSUMER.CREATE"),

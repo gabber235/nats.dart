@@ -45,6 +45,7 @@ void main() {
             maximumOutstandingBytes: 128,
           ),
         );
+    final failureResult = _failure(publication);
 
     final first = await harness.peer
         .nextPublication("events")
@@ -53,9 +54,7 @@ void main() {
       first.replySubject!,
       utf8.encode('{"type":"ack","seq":1,"msgs":1}'),
     );
-    final failure = await _failure(
-      publication,
-    ).timeout(const Duration(seconds: 2));
+    final failure = await failureResult.timeout(const Duration(seconds: 2));
 
     expect(failure.message, contains("maximumOutstandingBytes"));
     expect(failure.ambiguous, isFalse);

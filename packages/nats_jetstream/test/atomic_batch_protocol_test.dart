@@ -64,18 +64,13 @@ void main() {
       final harness = await _Harness.open();
       addTearDown(harness.close);
 
-      final result = harness.publish(
+      await harness.publish(
         acknowledgedBatch: scenario.batch,
         acknowledgedCount: scenario.count,
-      );
-      await expectLater(
-        result,
-        throwsA(
-          isA<JetStreamProtocolException>().having(
-            (error) => error.fieldPath,
-            "fieldPath",
-            scenario.fieldPath,
-          ),
+        expectedFailure: isA<JetStreamProtocolException>().having(
+          (error) => error.fieldPath,
+          "fieldPath",
+          scenario.fieldPath,
         ),
       );
     });
@@ -85,10 +80,10 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
 
-    final result = await harness.publish(
+    final result = (await harness.publish(
       acknowledgedBatch: "expected",
       acknowledgedCount: 2,
-    );
+    ))!;
 
     expect(result.batchId, "expected");
     expect(result.messageCount, BigInt.from(2));
@@ -98,18 +93,14 @@ void main() {
     final harness = await _Harness.open();
     addTearDown(harness.close);
 
-    await expectLater(
-      harness.publish(
-        acknowledgedBatch: "expected",
-        acknowledgedCount: 2,
-        acknowledgedSequence: BigInt.zero,
-      ),
-      throwsA(
-        isA<JetStreamProtocolException>().having(
-          (error) => error.fieldPath,
-          "fieldPath",
-          "seq",
-        ),
+    await harness.publish(
+      acknowledgedBatch: "expected",
+      acknowledgedCount: 2,
+      acknowledgedSequence: BigInt.zero,
+      expectedFailure: isA<JetStreamProtocolException>().having(
+        (error) => error.fieldPath,
+        "fieldPath",
+        "seq",
       ),
     );
   });
@@ -133,15 +124,22 @@ final class _Harness {
   final ScriptedNatsPeer peer;
   final NatsConnection connection;
 
-  Future<JetStreamAtomicBatchAck> publish({
+  Future<JetStreamAtomicBatchAck?> publish({
     required String acknowledgedBatch,
     required int acknowledgedCount,
     BigInt? acknowledgedSequence,
+    Matcher? expectedFailure,
   }) async {
     final pending = JetStreamContext(connection).publishAtomicBatch([
       JetStreamAtomicMessage("events", const [1]),
       JetStreamAtomicMessage("events", const [2]),
     ], batchId: "expected");
+    final expectation = expectedFailure == null
+        ? null
+        : expectLater(
+            pending.timeout(const Duration(seconds: 2)),
+            throwsA(expectedFailure),
+          );
     for (var index = 0; index < 2; index += 1) {
       final staged = await peer
           .nextPublication("events")
@@ -160,6 +158,10 @@ final class _Harness {
         "count": BigInt.from(acknowledgedCount),
       }),
     );
+    if (expectation != null) {
+      await expectation;
+      return null;
+    }
     return pending.timeout(const Duration(seconds: 2));
   }
 

@@ -196,6 +196,16 @@ void main() {
       final result = harness.publishConfirmed(
         confirmationTimeout: const Duration(milliseconds: 100),
       );
+      final expectation = expectLater(
+        result,
+        throwsA(
+          isA<JetStreamProtocolException>().having(
+            (error) => error.fieldPath,
+            "fieldPath",
+            "stream",
+          ),
+        ),
+      );
       await harness.peer.nextSubscription(
         r"$JS.EVENT.ADVISORY.STREAM.BATCH_ABANDONED.EVENTS",
       );
@@ -214,16 +224,7 @@ void main() {
         }),
       );
 
-      await expectLater(
-        result,
-        throwsA(
-          isA<JetStreamProtocolException>().having(
-            (error) => error.fieldPath,
-            "fieldPath",
-            "stream",
-          ),
-        ),
-      );
+      await expectation;
     },
   );
 

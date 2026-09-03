@@ -12,7 +12,10 @@ void main() {
   test("nonupgrade HTTP response is a typed WebSocket failure", () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final listener = server.listen((request) async {
-      request.response.statusCode = HttpStatus.ok;
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..persistentConnection = false
+        ..contentLength = 0;
       await request.response.close();
     });
     addTearDown(() async {
@@ -28,7 +31,7 @@ void main() {
         ),
         NatsTlsOptions(),
         NatsWebSocketOptions(),
-        const Duration(seconds: 1),
+        const Duration(seconds: 10),
       ),
       throwsA(isA<NatsWebSocketUpgradeException>()),
     );

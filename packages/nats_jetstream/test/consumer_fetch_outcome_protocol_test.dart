@@ -24,6 +24,7 @@ void main() {
           expires: const Duration(seconds: 1),
         ),
       );
+      final failureResult = _failure(result);
       await harness.respondToInfo();
       final pull = await harness.peer.nextPublication(_pullSubject);
       final request = decodeExactJsonObject(pull.body);
@@ -35,7 +36,7 @@ void main() {
         2,
       ], replySubject: r"$JS.ACK.EVENTS.WORKER.1.2.2.2.1");
 
-      final failure = await _failure(result);
+      final failure = await failureResult;
       expect(failure.partialMessages, hasLength(1));
       expect(failure.cause, isA<NatsSlowConsumerException>());
       expect(failure.ambiguous, isTrue);
@@ -56,6 +57,7 @@ void main() {
           expires: const Duration(seconds: 1),
         ),
       );
+      final failureResult = _failure(result);
       await harness.respondToInfo();
       final pull = await harness.peer.nextPublication(_pullSubject);
       final request = decodeExactJsonObject(pull.body);
@@ -70,7 +72,7 @@ void main() {
             "\$JS.ACK.EVENTS.WORKER.1.${index + 1}.${index + 1}.1.1000",
       );
 
-      final failure = await _failure(result);
+      final failure = await failureResult;
       expect(failure.partialMessages, isEmpty);
       expect(
         failure.cause,
@@ -144,13 +146,14 @@ void main() {
           expires: const Duration(seconds: 1),
         ),
       );
+      final failureResult = _failure(result);
       await harness.respondToInfo();
       final pull = await harness.peer.nextPublication(_pullSubject);
       await harness.peer.sendMessage(pull.replySubject!, const [
         1,
       ], replySubject: r"$JS.ACK.OTHER.WORKER.1.1.1.1.0");
 
-      final failure = await _failure(result);
+      final failure = await failureResult;
       expect(failure.partialMessages, isEmpty);
       expect(failure.ambiguous, isTrue);
       expect(
@@ -179,12 +182,13 @@ void main() {
         expires: const Duration(seconds: 1),
       ),
     );
+    final failureResult = _failure(result);
 
     await harness.respondToInfo();
     await harness.peer.nextPublication(_pullSubject);
     await harness.peer.disconnectClient();
 
-    final failure = await _failure(result);
+    final failure = await failureResult;
     expect(failure.partialMessages, isEmpty);
     expect(failure.ambiguous, isTrue);
     expect(failure.cause, isA<NatsConnectionException>());
@@ -200,12 +204,13 @@ void main() {
         expires: const Duration(seconds: 1),
       ),
     );
+    final failureResult = _failure(result);
 
     await harness.respondToInfo();
     await harness.peer.nextSubscription("_INBOX.*");
     await harness.peer.disconnectClient();
 
-    final failure = await _failure(result);
+    final failure = await failureResult;
     expect(failure.partialMessages, isEmpty);
     expect(failure.ambiguous, isFalse);
     expect(failure.cause, isA<NatsConnectionException>());
