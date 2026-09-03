@@ -26,6 +26,51 @@ void main() {
   final mainGo = File(".dagger/main.go").readAsStringSync();
   final readme = File("README.md").readAsStringSync();
 
+  const aggregateChecks = [
+    "Format",
+    "Analyze",
+    "ApiDocs",
+    "CompatibilityManifest",
+    "Unit",
+    "MinimumSdk",
+    "ExternalGitConsumer",
+    "ExternalFlutterGitConsumer",
+    "FlutterConsumer",
+    "Compatibility210",
+    "Compatibility212",
+    "CoreLatest",
+    "JetStreamLatest",
+    "AckSubjectV2Latest",
+    "AccountTierLatest",
+    "JetStreamProtocolLatest",
+    "StreamTransferLatest",
+    "ObjectStoreLatest",
+    "OrderedConsumerLatest",
+    "GoInteropLatest",
+    "ReconnectLatest",
+    "ReconnectSuspendLatest",
+    "JetStreamClusterLatest",
+    "AuthLatest",
+    "WebSocketLatest",
+    "SoakSmoke",
+    "TlsLatest",
+  ];
+  _require(
+    RegExp(r"^// \+check$", multiLine: true).allMatches(mainGo).length == 1 &&
+        mainGo.contains("// +check\nfunc (m *NatsDart) Verify("),
+    "Verify must be the only Dagger check",
+  );
+  final verifyBody = _daggerFunctionBody(mainGo, "Verify");
+  for (final check in aggregateChecks) {
+    final invocation = check == "TlsLatest"
+        ? "m.$check(ctx, source)"
+        : "m.$check(source)";
+    _require(
+      invocation.allMatches(verifyBody).length == 1,
+      "Verify must invoke $check exactly once",
+    );
+  }
+
   _require(
     !manifest.containsKey("verifiedAt"),
     "verifiedAt is evidence shaped metadata and must not be stored",
@@ -145,7 +190,7 @@ void main() {
       "Flutter consumer does not assert $assertion",
     );
   }
-  final flutterCheck = _daggerCheckBody(mainGo, "FlutterConsumer");
+  final flutterCheck = _daggerFunctionBody(mainGo, "FlutterConsumer");
   _require(
     mainGo.contains('"compatibility.json"') &&
         flutterCheck.contains('"verify_consumer.dart"'),
@@ -190,6 +235,10 @@ void main() {
     "resilience": File(".github/workflows/resilience.yml").readAsStringSync(),
   };
   final workflow = workflowFiles["verification"]!;
+  _require(
+    workflow.contains('check: "**"'),
+    "Verification CI must execute every annotated Dagger check",
+  );
   _require(
     workflow.contains("# v$actionVersion"),
     "The Dagger GitHub Action pin is not documented as v$actionVersion",
@@ -361,7 +410,7 @@ void main() {
       "$laneName has unsupported platform $platform",
     );
 
-    final checkBody = _daggerCheckBody(mainGo, check);
+    final checkBody = _daggerFunctionBody(mainGo, check);
     _require(
       checkBody.contains('"$laneName"'),
       "Dagger check $check does not execute lane $laneName",
@@ -455,10 +504,10 @@ bool _isIntegrationTest(String path) {
       (path.contains("/test/integration/") || path.contains("/test/browser/"));
 }
 
-String _daggerCheckBody(String mainGo, String check) {
-  final signature = "// +check\nfunc (m *NatsDart) $check(";
+String _daggerFunctionBody(String mainGo, String function) {
+  final signature = "func (m *NatsDart) $function(";
   final start = mainGo.indexOf(signature);
-  _require(start >= 0, "Dagger check $check is missing");
+  _require(start >= 0, "Dagger function $function is missing");
   final nextFunction = mainGo.indexOf(
     "\nfunc (m *NatsDart)",
     start + signature.length,

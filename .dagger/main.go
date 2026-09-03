@@ -134,7 +134,6 @@ func (m *NatsDart) gitFixture(
 		WithExec([]string{"git", "commit", "--quiet", "--message", "fixture"})
 }
 
-// +check
 func (m *NatsDart) ExternalGitConsumer(
 	source *dagger.Workspace,
 ) *dagger.Container {
@@ -165,7 +164,6 @@ func (m *NatsDart) ExternalGitConsumer(
 		WithExec([]string{"dart", "run", "bin/main.dart"})
 }
 
-// +check
 func (m *NatsDart) ExternalFlutterGitConsumer(
 	source *dagger.Workspace,
 ) *dagger.Container {
@@ -319,7 +317,6 @@ func (m *NatsDart) withNatsService(
 	})
 }
 
-// +check
 func (m *NatsDart) Format(source *dagger.Workspace) *dagger.Container {
 	return m.dart(source).WithExec([]string{
 		"dart",
@@ -332,7 +329,6 @@ func (m *NatsDart) Format(source *dagger.Workspace) *dagger.Container {
 	})
 }
 
-// +check
 func (m *NatsDart) Analyze(source *dagger.Workspace) *dagger.Container {
 	return m.dart(source).WithExec([]string{
 		"dart",
@@ -342,7 +338,6 @@ func (m *NatsDart) Analyze(source *dagger.Workspace) *dagger.Container {
 	})
 }
 
-// +check
 func (m *NatsDart) ApiDocs(source *dagger.Workspace) *dagger.Container {
 	return m.dart(source).
 		WithExec([]string{
@@ -353,7 +348,6 @@ func (m *NatsDart) ApiDocs(source *dagger.Workspace) *dagger.Container {
 		})
 }
 
-// +check
 func (m *NatsDart) MinimumSdk(source *dagger.Workspace) *dagger.Container {
 	return m.dartWithImage(
 		source,
@@ -396,7 +390,6 @@ func (m *NatsDart) flutterConsumer(source *dagger.Workspace) *dagger.Container {
 		WithWorkdir("/consumer")
 }
 
-// +check
 func (m *NatsDart) FlutterConsumer(source *dagger.Workspace) *dagger.Container {
 	return m.flutterConsumer(source).
 		WithExec([]string{"dart", "verify_consumer.dart"})
@@ -408,7 +401,6 @@ func (m *NatsDart) FlutterConsumerLock(source *dagger.Workspace) *dagger.File {
 		File("/consumer/pubspec.lock")
 }
 
-// +check
 func (m *NatsDart) CompatibilityManifest(source *dagger.Workspace) *dagger.Container {
 	return m.dart(source).WithExec([]string{
 		"dart",
@@ -417,13 +409,61 @@ func (m *NatsDart) CompatibilityManifest(source *dagger.Workspace) *dagger.Conta
 	})
 }
 
-// +check
 func (m *NatsDart) Unit(source *dagger.Workspace) *dagger.Container {
 	return m.dart(source).WithExec([]string{
 		"dart",
 		"run",
 		"tool/run_unit_tests.dart",
 	})
+}
+
+// Verify runs the complete required matrix with bounded runner load.
+//
+// +check
+func (m *NatsDart) Verify(
+	ctx context.Context,
+	source *dagger.Workspace,
+) (string, error) {
+	checks := []struct {
+		name      string
+		container *dagger.Container
+	}{
+		{"format", m.Format(source)},
+		{"analyze", m.Analyze(source)},
+		{"api docs", m.ApiDocs(source)},
+		{"compatibility manifest", m.CompatibilityManifest(source)},
+		{"unit", m.Unit(source)},
+		{"minimum SDK", m.MinimumSdk(source)},
+		{"external Git consumer", m.ExternalGitConsumer(source)},
+		{"external Flutter Git consumer", m.ExternalFlutterGitConsumer(source)},
+		{"Flutter consumer", m.FlutterConsumer(source)},
+		{"compatibility 2.10", m.Compatibility210(source)},
+		{"compatibility 2.12", m.Compatibility212(source)},
+		{"Core latest", m.CoreLatest(source)},
+		{"JetStream latest", m.JetStreamLatest(source)},
+		{"ACK subject v2 latest", m.AckSubjectV2Latest(source)},
+		{"account tier latest", m.AccountTierLatest(source)},
+		{"JetStream protocol latest", m.JetStreamProtocolLatest(source)},
+		{"stream transfer latest", m.StreamTransferLatest(source)},
+		{"Object Store latest", m.ObjectStoreLatest(source)},
+		{"ordered consumer latest", m.OrderedConsumerLatest(source)},
+		{"Go interop latest", m.GoInteropLatest(source)},
+		{"reconnect latest", m.ReconnectLatest(source)},
+		{"reconnect suspend latest", m.ReconnectSuspendLatest(source)},
+		{"JetStream cluster latest", m.JetStreamClusterLatest(source)},
+		{"authentication latest", m.AuthLatest(source)},
+		{"WebSocket latest", m.WebSocketLatest(source)},
+		{"soak smoke", m.SoakSmoke(source)},
+	}
+	for _, check := range checks {
+		if _, err := check.container.Sync(ctx); err != nil {
+			return "", fmt.Errorf("%s verification failed: %w", check.name, err)
+		}
+	}
+	if _, err := m.TlsLatest(ctx, source); err != nil {
+		return "", fmt.Errorf("TLS latest verification failed: %w", err)
+	}
+	return "Complete Dagger verification passed", nil
 }
 
 func (m *NatsDart) natsServer(image string) *dagger.Service {
@@ -579,7 +619,6 @@ func (m *NatsDart) compatibilityVersion(
 	return m.runIntegrationLane(container, lane)
 }
 
-// +check
 func (m *NatsDart) Compatibility212(source *dagger.Workspace) *dagger.Container {
 	return m.compatibilityVersion(
 		source,
@@ -590,7 +629,6 @@ func (m *NatsDart) Compatibility212(source *dagger.Workspace) *dagger.Container 
 	)
 }
 
-// +check
 func (m *NatsDart) Compatibility210(source *dagger.Workspace) *dagger.Container {
 	return m.compatibilityVersion(
 		source,
@@ -601,7 +639,6 @@ func (m *NatsDart) Compatibility210(source *dagger.Workspace) *dagger.Container 
 	)
 }
 
-// +check
 func (m *NatsDart) CoreLatest(source *dagger.Workspace) *dagger.Container {
 	container := m.withNatsService(
 		m.dart(source),
@@ -618,7 +655,6 @@ func (m *NatsDart) CoreLatest(source *dagger.Workspace) *dagger.Container {
 	return m.runIntegrationLane(container, "coreLatest")
 }
 
-// +check
 func (m *NatsDart) JetStreamLatest(source *dagger.Workspace) *dagger.Container {
 	container := m.withNatsService(
 		m.dart(source),
@@ -649,7 +685,6 @@ func (m *NatsDart) JetStreamLatest(source *dagger.Workspace) *dagger.Container {
 	return m.runIntegrationLane(container, "jetStreamLatest")
 }
 
-// +check
 func (m *NatsDart) AckSubjectV2Latest(
 	source *dagger.Workspace,
 ) *dagger.Container {
@@ -667,7 +702,6 @@ func (m *NatsDart) AckSubjectV2Latest(
 	return m.runIntegrationLane(container, "ackSubjectV2Latest")
 }
 
-// +check
 func (m *NatsDart) AccountTierLatest(
 	source *dagger.Workspace,
 ) *dagger.Container {
@@ -724,7 +758,6 @@ func (m *NatsDart) soak(
 	})
 }
 
-// +check
 func (m *NatsDart) SoakSmoke(source *dagger.Workspace) *dagger.Container {
 	return m.soak(source, 15, 20260902)
 }
@@ -737,7 +770,6 @@ func (m *NatsDart) Soak(
 	return m.soak(source, durationSeconds, seed)
 }
 
-// +check
 func (m *NatsDart) OrderedConsumerLatest(source *dagger.Workspace) *dagger.Container {
 	serverBinary := dag.Container().
 		From(latestNatsImage).
@@ -767,7 +799,6 @@ func (m *NatsDart) OrderedConsumerLatest(source *dagger.Workspace) *dagger.Conta
 		})
 }
 
-// +check
 func (m *NatsDart) GoInteropLatest(source *dagger.Workspace) *dagger.Container {
 	fixtureSource := source.Directory("tool/go_interop")
 	fixture := dag.Container().
@@ -806,7 +837,6 @@ func (m *NatsDart) GoInteropLatest(source *dagger.Workspace) *dagger.Container {
 	return m.runIntegrationLane(container, "goInteropLatest")
 }
 
-// +check
 func (m *NatsDart) JetStreamProtocolLatest(source *dagger.Workspace) *dagger.Container {
 	return m.withNatsService(
 		m.dart(source),
@@ -838,7 +868,6 @@ func (m *NatsDart) JetStreamProtocolLatest(source *dagger.Workspace) *dagger.Con
 		})
 }
 
-// +check
 func (m *NatsDart) StreamTransferLatest(source *dagger.Workspace) *dagger.Container {
 	return m.withNatsService(
 		m.dart(source),
@@ -860,7 +889,6 @@ func (m *NatsDart) StreamTransferLatest(source *dagger.Workspace) *dagger.Contai
 		})
 }
 
-// +check
 func (m *NatsDart) ObjectStoreLatest(source *dagger.Workspace) *dagger.Container {
 	return m.withNatsService(
 		m.dart(source),
@@ -888,7 +916,6 @@ func (m *NatsDart) ObjectStoreLatest(source *dagger.Workspace) *dagger.Container
 		})
 }
 
-// +check
 func (m *NatsDart) ReconnectLatest(source *dagger.Workspace) *dagger.Container {
 	serverBinary := dag.Container().
 		From(latestNatsImage).
@@ -901,8 +928,6 @@ func (m *NatsDart) ReconnectLatest(source *dagger.Workspace) *dagger.Container {
 }
 
 // ReconnectSuspendLatest proves heartbeat failure against a suspended server.
-//
-// +check
 func (m *NatsDart) ReconnectSuspendLatest(source *dagger.Workspace) *dagger.Container {
 	serverBinary := dag.Container().
 		From(latestNatsImage).
@@ -914,7 +939,6 @@ func (m *NatsDart) ReconnectSuspendLatest(source *dagger.Workspace) *dagger.Cont
 	return m.runIntegrationLane(container, "reconnectSuspendLatest")
 }
 
-// +check
 func (m *NatsDart) JetStreamClusterLatest(source *dagger.Workspace) *dagger.Container {
 	serverBinary := dag.Container().
 		From(latestNatsImage).
@@ -961,7 +985,6 @@ tls {
 		})
 }
 
-// +check
 func (m *NatsDart) TlsLatest(
 	ctx context.Context,
 	source *dagger.Workspace,
@@ -1184,7 +1207,6 @@ websocket {
 		})
 }
 
-// +check
 func (m *NatsDart) WebSocketLatest(source *dagger.Workspace) *dagger.Container {
 	certificates := m.tlsCertificates(source)
 	browserFixture := m.browserFixture(source, certificates)
@@ -1284,7 +1306,6 @@ authorization {
 		})
 }
 
-// +check
 func (m *NatsDart) AuthLatest(source *dagger.Workspace) *dagger.Container {
 	security := m.securityFixture(source)
 	base := m.dart(source).
