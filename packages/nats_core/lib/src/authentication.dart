@@ -144,6 +144,11 @@ abstract interface class NatsAuthentication {
   }
 
   /// Creates NKey or JWT challenge response authentication.
+  ///
+  /// [connectNkey] replaces the public NKey with a deployment specific
+  /// qualifier. This mode signs a server nonce when present, but can continue
+  /// without one because the qualifier cannot represent the signing key.
+  /// Standard NKey and JWT authentication still require a server nonce.
   factory NatsAuthentication.nkey(
     String seed, {
     String? jwt,
@@ -215,6 +220,15 @@ final class _NKeyAuthentication implements NatsAuthentication {
   Future<NatsConnectCredentials> authenticate(NatsAuthContext context) async {
     final nonce = context.nonce;
     if (nonce == null || nonce.isEmpty) {
+      if (connectNkey != null) {
+        return NatsConnectCredentials(
+          username: username,
+          password: password,
+          jwt: jwt,
+          nkey: connectNkey,
+          extensions: extensions,
+        );
+      }
       throw const NatsAuthenticationException(
         "Server did not provide an authentication nonce",
       );

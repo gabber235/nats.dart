@@ -42,6 +42,40 @@ void main() {
     expect(fields["custom"], isTrue);
   });
 
+  test("NKey authentication requires a server nonce", () async {
+    final authentication = NatsAuthentication.nkey(_seed);
+
+    await expectLater(
+      authentication.authenticate(_context()),
+      throwsA(
+        isA<NatsAuthenticationException>().having(
+          (error) => error.message,
+          "message",
+          "Server did not provide an authentication nonce",
+        ),
+      ),
+    );
+  });
+
+  test("deployment qualifier permits a missing server nonce", () async {
+    final authentication = NatsAuthentication.nkey(
+      _seed,
+      jwt: "header.payload.signature",
+      username: "entity",
+      password: "secret",
+      connectNkey: "encoded-qualifier",
+    );
+
+    final credentials = await authentication.authenticate(_context());
+    final fields = credentials.toConnectFields();
+
+    expect(fields["jwt"], "header.payload.signature");
+    expect(fields["nkey"], "encoded-qualifier");
+    expect(fields["user"], "entity");
+    expect(fields["pass"], "secret");
+    expect(fields, isNot(contains("sig")));
+  });
+
   test("credentials reject conflicting and reserved fields", () {
     expect(
       () =>
