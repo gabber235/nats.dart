@@ -414,6 +414,7 @@ dagger call external-git-consumer stdout
 dagger call external-flutter-git-consumer stdout
 dagger call minimum-sdk stdout
 dagger call flutter-consumer stdout
+dagger call flutter-browser-consumer stdout
 dagger call core-latest stdout
 dagger call jet-stream-latest stdout
 dagger call jet-stream-protocol-latest stdout
@@ -446,7 +447,8 @@ container emulation because the official Flutter Linux release is available
 only for AMD64. Each Flutter subprocess has a 15 minute bound. The check
 asserts the Flutter version, framework revision, effective user, and HOME
 before compiling both public packages. Its application lockfile is checked in
-and enforced.
+and enforced. A separate check runs NKey signing through Flutter's Chrome
+debug compiler in Dagger.
 
 Fast host feedback:
 

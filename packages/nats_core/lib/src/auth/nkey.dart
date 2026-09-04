@@ -25,10 +25,7 @@ final class NKeySigner {
         "NKey seed must contain a user key",
       );
     }
-    return NKeySigner._(
-      Uint8List.fromList(decoded.sublist(2)).asUnmodifiableView(),
-      publicPrefix,
-    );
+    return NKeySigner._(Uint8List.fromList(decoded.sublist(2)), publicPrefix);
   }
 
   final Uint8List _seed;

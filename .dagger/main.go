@@ -23,6 +23,8 @@ const browserDartCacheKey = "dart-browser-3.13.2-pub-v2"
 
 const flutterPubCacheKey = "flutter-3.47.2-pub-v2"
 
+const flutterBrowserPubCacheKey = "flutter-browser-3.47.2-pub-v1"
+
 const goModuleCacheKey = "go-1.26.0-nats-go-1.53.1-mod-v1"
 
 const goBuildCacheKey = "go-1.26.0-nats-go-1.53.1-build-v1"
@@ -360,8 +362,8 @@ func (m *NatsDart) MinimumSdk(source *dagger.Workspace) *dagger.Container {
 	})
 }
 
-func (m *NatsDart) flutterConsumer(source *dagger.Workspace) *dagger.Container {
-	consumer := source.Directory("tool/flutter_consumer").
+func (m *NatsDart) flutterConsumerDirectory(source *dagger.Workspace) *dagger.Directory {
+	return source.Directory("tool/flutter_consumer").
 		WithFile(
 			"compatibility.json",
 			source.Directory("tool").File("compatibility.json"),
@@ -374,6 +376,10 @@ func (m *NatsDart) flutterConsumer(source *dagger.Workspace) *dagger.Container {
 			"packages/nats_jetstream",
 			source.Directory("packages/nats_jetstream"),
 		)
+}
+
+func (m *NatsDart) flutterConsumer(source *dagger.Workspace) *dagger.Container {
+	consumer := m.flutterConsumerDirectory(source)
 
 	return dag.Container(dagger.ContainerOpts{Platform: "linux/amd64"}).
 		From(flutterImage).
@@ -399,6 +405,53 @@ func (m *NatsDart) FlutterConsumerLock(source *dagger.Workspace) *dagger.File {
 	return m.flutterConsumer(source).
 		WithExec([]string{"dart", "verify_consumer.dart", "--lock-only"}).
 		File("/consumer/pubspec.lock")
+}
+
+func (m *NatsDart) FlutterBrowserConsumer(source *dagger.Workspace) *dagger.Container {
+	flutterRuntime := dag.Container(dagger.ContainerOpts{Platform: "linux/amd64"}).
+		From(flutterImage)
+	flutterSdk := flutterRuntime.Directory("/home/flutter/sdks/flutter")
+
+	return dag.Container(dagger.ContainerOpts{Platform: "linux/amd64"}).
+		From(browserImage).
+		WithoutEnvVariable("DISPLAY").
+		WithUser("root").
+		WithDirectory(
+			"/opt/flutter",
+			flutterSdk,
+			dagger.ContainerWithDirectoryOpts{Owner: "root:root"},
+		).
+		WithFile("/usr/bin/git", flutterRuntime.File("/usr/bin/git")).
+		WithDirectory("/usr/lib/git-core", flutterRuntime.Directory("/usr/lib/git-core")).
+		WithDirectory("/usr/share/git-core", flutterRuntime.Directory("/usr/share/git-core")).
+		WithEnvVariable("FLUTTER_ROOT", "/opt/flutter").
+		WithEnvVariable(
+			"PATH",
+			"/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH",
+			dagger.ContainerWithEnvVariableOpts{Expand: true},
+		).
+		WithEnvVariable("HOME", "/root").
+		WithEnvVariable("CHROME_EXECUTABLE", "/usr/local/bin/chrome-for-test").
+		WithNewFile(
+			"/usr/local/bin/chrome-for-test",
+			"#!/bin/sh\nexec /usr/bin/chromium --no-sandbox \"$@\"\n",
+			dagger.ContainerWithNewFileOpts{Permissions: 0o755},
+		).
+		WithDirectory("/consumer", m.flutterConsumerDirectory(source)).
+		WithMountedCache(
+			"/root/.pub-cache",
+			dag.CacheVolume(flutterBrowserPubCacheKey),
+		).
+		WithWorkdir("/consumer").
+		WithExec([]string{"flutter", "pub", "get", "--enforce-lockfile"}).
+		WithExec([]string{
+			"flutter",
+			"test",
+			"--platform",
+			"chrome",
+			"--no-pub",
+			"test/public_packages_test.dart",
+		})
 }
 
 func (m *NatsDart) CompatibilityManifest(source *dagger.Workspace) *dagger.Container {
@@ -437,6 +490,7 @@ func (m *NatsDart) Verify(
 		{"external Git consumer", m.ExternalGitConsumer(source)},
 		{"external Flutter Git consumer", m.ExternalFlutterGitConsumer(source)},
 		{"Flutter consumer", m.FlutterConsumer(source)},
+		{"Flutter browser consumer", m.FlutterBrowserConsumer(source)},
 		{"compatibility 2.10", m.Compatibility210(source)},
 		{"compatibility 2.12", m.Compatibility212(source)},
 		{"Core latest", m.CoreLatest(source)},

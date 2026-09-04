@@ -36,6 +36,7 @@ void main() {
     "ExternalGitConsumer",
     "ExternalFlutterGitConsumer",
     "FlutterConsumer",
+    "FlutterBrowserConsumer",
     "Compatibility210",
     "Compatibility212",
     "CoreLatest",
@@ -82,6 +83,7 @@ void main() {
     "external-flutter-git-consumer",
     "minimum-sdk",
     "flutter-consumer",
+    "flutter-browser-consumer",
     "core-latest",
     "jet-stream-latest",
     "jet-stream-protocol-latest",
@@ -195,6 +197,16 @@ void main() {
     mainGo.contains('"compatibility.json"') &&
         flutterCheck.contains('"verify_consumer.dart"'),
     "Flutter consumer does not run its exact environment verifier",
+  );
+  final flutterBrowserCheck = _daggerFunctionBody(
+    mainGo,
+    "FlutterBrowserConsumer",
+  );
+  _require(
+    flutterBrowserCheck.contains('WithoutEnvVariable("DISPLAY")') &&
+        flutterBrowserCheck.contains('"--platform"') &&
+        flutterBrowserCheck.contains('"chrome"'),
+    "Flutter browser consumer must execute Chrome without a display",
   );
 
   final flutterVersion = _string(flutter, "required");
