@@ -230,7 +230,7 @@ final class NatsConnectionLimitException extends NatsServerException {
   NatsConnectionLimitException({
     required String serverMessage,
     required this.scope,
-  }) : super(serverMessage, "$scope connection limit exceeded");
+  }) : super(serverMessage, "${scope.name} connection limit exceeded");
 
   /// Owner of the reached limit.
   final NatsConnectionLimitScope scope;

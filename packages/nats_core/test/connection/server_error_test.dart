@@ -51,21 +51,37 @@ void main() {
       classifyServerError("Stale Connection"),
       isA<NatsStaleConnectionException>(),
     );
+    final serverLimit = classifyServerError("Maximum Connections Exceeded");
     expect(
-      classifyServerError("Maximum Connections Exceeded"),
-      isA<NatsConnectionLimitException>().having(
-        (error) => error.scope,
-        "scope",
-        NatsConnectionLimitScope.server,
-      ),
+      serverLimit,
+      isA<NatsConnectionLimitException>()
+          .having(
+            (error) => error.scope,
+            "scope",
+            NatsConnectionLimitScope.server,
+          )
+          .having(
+            (error) => error.message,
+            "message",
+            "server connection limit exceeded",
+          ),
+    );
+    final accountLimit = classifyServerError(
+      "Maximum Account Active Connections Exceeded",
     );
     expect(
-      classifyServerError("Maximum Account Active Connections Exceeded"),
-      isA<NatsConnectionLimitException>().having(
-        (error) => error.scope,
-        "scope",
-        NatsConnectionLimitScope.account,
-      ),
+      accountLimit,
+      isA<NatsConnectionLimitException>()
+          .having(
+            (error) => error.scope,
+            "scope",
+            NatsConnectionLimitScope.account,
+          )
+          .having(
+            (error) => error.message,
+            "message",
+            "account connection limit exceeded",
+          ),
     );
   });
 
