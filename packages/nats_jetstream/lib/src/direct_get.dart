@@ -1,5 +1,4 @@
 import "dart:async";
-import "dart:math";
 import "dart:typed_data";
 
 import "package:nats_core/nats_core.dart";
@@ -133,7 +132,7 @@ final class JetStreamDirectReader {
     }
     final subject = "$apiPrefix.DIRECT.GET.$stream";
     final generation = connection.generation;
-    final inbox = "_INBOX.${_randomToken(22)}";
+    final inbox = connection.newInbox();
     NatsSubscription? subscription;
     StreamIterator<NatsMessage>? iterator;
     final messages = <JetStreamStoredMessage>[];
@@ -309,16 +308,4 @@ final class JetStreamDirectReader {
       ),
     ).asUnmodifiableView();
   }
-}
-
-String _randomToken(int length) {
-  const alphabet =
-      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  final random = Random.secure();
-  return String.fromCharCodes(
-    List.generate(
-      length,
-      (_) => alphabet.codeUnitAt(random.nextInt(alphabet.length)),
-    ),
-  );
 }

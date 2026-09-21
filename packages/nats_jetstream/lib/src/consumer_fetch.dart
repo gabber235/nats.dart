@@ -219,7 +219,7 @@ final class JetStreamPullConsumer {
   /// Executes one finite generation scoped pull.
   Future<JetStreamFetchResult> fetch(JetStreamFetchRequest request) async {
     final generation = connection.generation;
-    final inbox = "_INBOX.${_randomToken(22)}";
+    final inbox = connection.newInbox();
     final received = <JetStreamDelivery>[];
     var receivedBytes = 0;
     var requestPublished = false;
@@ -421,16 +421,4 @@ JetStreamFetchCompletion? _normalCompletion(NatsHeaders headers) {
       JetStreamFetchCompletion.byteLimit,
     _ => null,
   };
-}
-
-String _randomToken(int length) {
-  const alphabet =
-      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  final random = Random.secure();
-  return String.fromCharCodes(
-    List.generate(
-      length,
-      (_) => alphabet.codeUnitAt(random.nextInt(alphabet.length)),
-    ),
-  );
 }

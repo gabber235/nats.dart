@@ -1,5 +1,4 @@
 import "dart:async";
-import "dart:math";
 
 import "package:nats_core/nats_core.dart";
 import "package:nats_jetstream/src/consumer_config.dart";
@@ -182,7 +181,7 @@ final class JetStreamConsumerStreamSession implements JetStreamConsumerStream {
       options.expires,
     );
     _requireGeneration(generation);
-    final inbox = "_INBOX.${_randomToken(22)}";
+    final inbox = connection.newInbox();
     final subscription = await connection.subscribe(
       inbox,
       options: NatsSubscriptionOptions(
@@ -435,15 +434,3 @@ bool _normalCompletion(NatsHeaders headers) => switch (headers.statusCode) {
     true,
   _ => false,
 };
-
-String _randomToken(int length) {
-  const alphabet =
-      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  final random = Random.secure();
-  return String.fromCharCodes(
-    List.generate(
-      length,
-      (_) => alphabet.codeUnitAt(random.nextInt(alphabet.length)),
-    ),
-  );
-}

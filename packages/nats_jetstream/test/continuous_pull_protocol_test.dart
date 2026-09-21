@@ -14,6 +14,27 @@ const _pullSubject = r"$JS.API.CONSUMER.MSG.NEXT.EVENTS.WORKER";
 const _deadline = Duration(seconds: 2);
 
 void main() {
+  test("continuous pull uses the connection inbox namespace", () async {
+    final harness = await _Harness.open(
+      requestInboxPrefix: "_INBOX.panel_user",
+    );
+    addTearDown(harness.close);
+    final stream = harness.consume();
+    final listener = stream.messages.listen((_) {});
+    addTearDown(listener.cancel);
+
+    expect(
+      await harness.peer.nextSubscription("_INBOX.panel_user.*"),
+      "_INBOX.panel_user.*",
+    );
+    await harness.respondToInfo(JetStreamConsumerAckPolicy.explicit);
+    final inbox = await harness.peer.nextSubscription("_INBOX.panel_user.*");
+    final pull = await harness.peer.nextPublication(_pullSubject);
+
+    expect(pull.replySubject, inbox);
+    await stream.stop().timeout(_deadline);
+  });
+
   test(
     "AckNone continuous delivery preserves metadata without ack API",
     () async {
@@ -298,12 +319,13 @@ int _pullCount(ScriptedNatsPeer peer) => peer.publications
 final class _Harness {
   const _Harness(this.peer, this.connection);
 
-  static Future<_Harness> open() async {
+  static Future<_Harness> open({String? requestInboxPrefix}) async {
     final peer = await ScriptedNatsPeer.start();
     final connection = await NatsConnection.connect(
       NatsOptions(
         servers: [NatsServer.parse(peer.uri.toString())],
         reconnect: NatsReconnectPolicy(maximumAttempts: 0),
+        requestInboxPrefix: requestInboxPrefix,
         pingInterval: const Duration(minutes: 10),
       ),
     );

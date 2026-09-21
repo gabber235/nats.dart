@@ -1,5 +1,4 @@
 import "dart:async";
-import "dart:math";
 import "dart:typed_data";
 
 import "package:nats_core/nats_core.dart";
@@ -39,7 +38,7 @@ final class JetStreamSnapshotTransfer {
     final timeout = effective.timeout;
     final clock = Stopwatch()..start();
     final generation = connection.generation;
-    final inbox = "_INBOX.${_randomToken(22)}";
+    final inbox = connection.newInbox();
     final subject = "$apiPrefix.STREAM.SNAPSHOT.$stream";
     NatsSubscription? subscription;
     StreamIterator<NatsMessage>? iterator;
@@ -181,16 +180,4 @@ Duration _remaining(Stopwatch clock, Duration timeout) {
     throw NatsTimeoutException("JetStream snapshot transfer");
   }
   return remaining;
-}
-
-String _randomToken(int length) {
-  const alphabet =
-      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  final random = Random.secure();
-  return String.fromCharCodes(
-    List.generate(
-      length,
-      (_) => alphabet.codeUnitAt(random.nextInt(alphabet.length)),
-    ),
-  );
 }

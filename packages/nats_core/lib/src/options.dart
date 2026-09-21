@@ -521,11 +521,11 @@ final class NatsOptions {
   /// Optional server and bounded extra delay selection for reconnect attempts.
   final NatsReconnectServerSelector? reconnectToServer;
 
-  /// Literal subject prefix used for shared request reply inboxes.
+  /// Literal subject prefix used for connection owned inboxes.
   ///
   /// When absent, each connection owns a random `_INBOX` namespace. Configure
   /// this only when server permissions require a caller specific namespace.
-  /// The connection appends one random token to this prefix for every request.
+  /// Core requests and higher level protocols append random tokens to it.
   final String? requestInboxPrefix;
 
   /// Whether this connection receives its own matching publications.

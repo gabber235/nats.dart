@@ -66,7 +66,7 @@ final class JetStreamContinuousWatchGenerationOwner {
     JetStreamConsumerStart start,
   ) async {
     final generation = connection.generation;
-    final inbox = "_INBOX.${_randomToken(22)}";
+    final inbox = connection.newInbox();
     final consumer = "W${_randomToken(21)}";
     NatsSubscription? subscription;
     try {

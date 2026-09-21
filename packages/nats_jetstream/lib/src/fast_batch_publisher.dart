@@ -43,7 +43,7 @@ final class _FastBatchOperation {
     this.options,
     this.batchId,
     this._generation,
-  ) : _prefix = "_INBOX.${_randomToken(22)}";
+  ) : _prefix = connection.newInbox();
 
   final NatsConnection connection;
   final JetStreamFastBatchOptions options;

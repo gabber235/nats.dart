@@ -170,6 +170,21 @@ final class NatsConnection {
   /// Completes after terminal resource cleanup.
   Future<void> get closed => _closed.future;
 
+  /// Allocates a unique inbox within this connection's configured namespace.
+  ///
+  /// Core requests and higher level protocols share this allocator so caller
+  /// scoped server permissions apply consistently to every reply subscription.
+  String newInbox() {
+    final prefix = _options.requestInboxPrefix ?? "_INBOX";
+    const alphabet =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    final token = StringBuffer();
+    for (var index = 0; index < 22; index += 1) {
+      token.write(alphabet[_random.nextInt(alphabet.length)]);
+    }
+    return "$prefix.$token";
+  }
+
   /// Returns an immutable credential free snapshot of the current pool.
   ///
   /// The snapshot includes servers discovered from INFO messages. Later pool
