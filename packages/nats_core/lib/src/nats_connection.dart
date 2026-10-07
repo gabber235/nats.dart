@@ -141,7 +141,6 @@ final class NatsConnection {
   bool _lastReadyHeadersSupported = false;
   bool _serverTlsAvailable = false;
   bool _serverTlsRequired = false;
-  bool _authenticationConnectSent = false;
   bool _ready = false;
   bool _transportActive = false;
   bool _publicationWriterActive = false;
@@ -454,7 +453,6 @@ final class NatsConnection {
       }
     }
     _writeRaw(_encoder.connect(connectFields), epoch: epoch);
-    _authenticationConnectSent = _options.authentication != null;
     await _ping(_options.connectTimeout, epoch: epoch);
   }
 
@@ -542,7 +540,6 @@ final class NatsConnection {
     _lameDuck = false;
     _serverTlsAvailable = false;
     _serverTlsRequired = false;
-    _authenticationConnectSent = false;
     _serverId = null;
     _serverName = null;
     _serverVersion = null;
@@ -1426,19 +1423,11 @@ final class NatsConnection {
       if (_closing || !_connecting || epoch != _activeEpoch) {
         return;
       }
-      final reportedFailure = _authenticationConnectSent
-          ? NatsAuthenticationException(
-              "Server closed before acknowledging authentication",
-              reason: NatsAuthenticationFailure.authorizationViolation,
-              cause: failure,
-              causeStackTrace: failure.causeStackTrace,
-            )
-          : failure;
       final handshakeFailure = _handshakeFailure;
       if (handshakeFailure != null && !handshakeFailure.isCompleted) {
-        handshakeFailure.complete(reportedFailure);
+        handshakeFailure.complete(failure);
       }
-      _connectionLost(epoch, reportedFailure);
+      _connectionLost(epoch, failure);
     });
   }
 

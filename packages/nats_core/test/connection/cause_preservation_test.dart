@@ -108,7 +108,7 @@ void main() {
   });
 
   test(
-    "authenticated CONNECT close is a typed authorization failure",
+    "silent authenticated CONNECT close remains a connection failure",
     () async {
       final listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
       final peerHandled = listener.first.then((peer) async {
@@ -137,22 +137,61 @@ void main() {
             ),
           ),
           throwsA(
-            isA<NatsAuthenticationException>()
-                .having(
-                  (error) => error.reason,
-                  "reason",
-                  NatsAuthenticationFailure.authorizationViolation,
-                )
-                .having(
-                  (error) => error.cause,
-                  "cause",
-                  isA<NatsConnectionException>(),
-                ),
+            isA<NatsConnectionException>().having(
+              (error) => error.message,
+              "message",
+              "Transport closed",
+            ),
           ),
         );
         await peerHandled;
       } finally {
         await listener.close();
+      }
+    },
+  );
+
+  test(
+    "silent WebSocket close after CONNECT remains a connection failure",
+    () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final peerHandled = server.first.then((request) async {
+        final peer = await WebSocketTransformer.upgrade(request);
+        peer.add(ascii.encode("INFO {\"max_payload\":1048576}\r\n"));
+        await peer.firstWhere(
+          (frame) => ascii.decode(frame as List<int>).startsWith("CONNECT "),
+        );
+        await peer.close();
+      });
+
+      try {
+        await expectLater(
+          NatsConnection.connect(
+            NatsOptions(
+              servers: [
+                NatsServer.websocket(
+                  InternetAddress.loopbackIPv4.address,
+                  port: server.port,
+                ),
+              ],
+              authentication: NatsAuthentication.userPassword(
+                "alice",
+                "secret",
+              ),
+              reconnect: NatsReconnectPolicy(maximumAttempts: 0),
+            ),
+          ),
+          throwsA(
+            isA<NatsConnectionException>().having(
+              (error) => error.message,
+              "message",
+              "Transport closed",
+            ),
+          ),
+        );
+        await peerHandled;
+      } finally {
+        await server.close(force: true);
       }
     },
   );

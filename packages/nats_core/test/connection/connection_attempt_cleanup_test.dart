@@ -352,12 +352,146 @@ void main() {
   });
 
   test(
-    "repeated authenticated CONNECT closes terminate unlimited reconnect",
+    "silent authenticated closures can recover on a later reconnect",
     () async {
       final peer = await _ScriptedNatsPeer.start([
         const _PeerAttempt(replyToPings: true),
         const _PeerAttempt(replyToPings: false, closeAfterConnect: true),
         const _PeerAttempt(replyToPings: false, closeAfterConnect: true),
+        const _PeerAttempt(replyToPings: true),
+      ]);
+      addTearDown(peer.close);
+      final connection = await NatsConnection.connect(
+        NatsOptions(
+          servers: [peer.server],
+          authentication: NatsAuthentication.userPassword("alice", "secret"),
+          reconnect: NatsReconnectPolicy(
+            maximumAttempts: -1,
+            baseDelay: const Duration(milliseconds: 1),
+            maximumDelay: const Duration(milliseconds: 1),
+            jitter: 0,
+          ),
+        ),
+      );
+      addTearDown(connection.close);
+      final recovered = connection.events
+          .where((event) => event is NatsConnected)
+          .first;
+
+      await peer.closeConnection(0);
+      await recovered.timeout(const Duration(seconds: 5));
+      await connection.flush();
+
+      expect(peer.acceptedConnections, 4);
+      expect(connection.statistics.reconnectAttempts, 3);
+      expect(connection.statistics.reconnectSuccesses, 1);
+    },
+  );
+
+  test(
+    "silent authenticated closures respect the connection retry budget",
+    () async {
+      final peer = await _ScriptedNatsPeer.start([
+        const _PeerAttempt(replyToPings: true),
+        const _PeerAttempt(replyToPings: false, closeAfterConnect: true),
+        const _PeerAttempt(replyToPings: false, closeAfterConnect: true),
+      ]);
+      addTearDown(peer.close);
+      final connection = await NatsConnection.connect(
+        NatsOptions(
+          servers: [peer.server],
+          authentication: NatsAuthentication.userPassword("alice", "secret"),
+          reconnect: NatsReconnectPolicy(
+            maximumAttempts: 2,
+            baseDelay: const Duration(milliseconds: 1),
+            maximumDelay: const Duration(milliseconds: 1),
+            jitter: 0,
+          ),
+        ),
+      );
+      addTearDown(connection.close);
+      final closed = connection.events
+          .where((event) => event is NatsClosed)
+          .cast<NatsClosed>()
+          .first;
+
+      await peer.closeConnection(0);
+      final terminal = await closed.timeout(const Duration(seconds: 5));
+      await connection.closed.timeout(const Duration(seconds: 5));
+
+      expect(terminal.error, isA<NatsConnectionException>());
+      expect(peer.acceptedConnections, 3);
+      expect(connection.statistics.reconnectAttempts, 2);
+    },
+  );
+
+  test(
+    "caller close cancels pending authentication without a rejection",
+    () async {
+      final peer = await _ScriptedNatsPeer.start([
+        const _PeerAttempt(replyToPings: true),
+        const _PeerAttempt(replyToPings: true),
+      ]);
+      addTearDown(peer.close);
+      final providerEntered = Completer<void>();
+      final cancelled = Completer<void>();
+      var invocations = 0;
+      final connection = await NatsConnection.connect(
+        NatsOptions(
+          servers: [peer.server],
+          authentication: NatsAuthentication.provider((context) async {
+            invocations += 1;
+            if (invocations > 1) {
+              providerEntered.complete();
+              await context.cancelled;
+              cancelled.complete();
+            }
+            return NatsConnectCredentials(
+              username: "alice",
+              password: "secret",
+            );
+          }),
+          reconnect: NatsReconnectPolicy(
+            maximumAttempts: -1,
+            baseDelay: const Duration(milliseconds: 1),
+            maximumDelay: const Duration(milliseconds: 1),
+            jitter: 0,
+          ),
+        ),
+      );
+      addTearDown(connection.close);
+      final closed = connection.events
+          .where((event) => event is NatsClosed)
+          .cast<NatsClosed>()
+          .first;
+
+      await peer.closeConnection(0);
+      await providerEntered.future.timeout(const Duration(seconds: 5));
+      await connection.close().timeout(const Duration(seconds: 1));
+      await cancelled.future.timeout(const Duration(seconds: 1));
+      final terminal = await closed.timeout(const Duration(seconds: 1));
+      await connection.closed.timeout(const Duration(seconds: 1));
+
+      expect(terminal.error, isNull);
+      expect(invocations, 2);
+      expect(peer.acceptedConnections, 2);
+      expect(connection.statistics.reconnectAttempts, 1);
+    },
+  );
+
+  test(
+    "repeated explicit authorization rejections terminate unlimited reconnect",
+    () async {
+      final peer = await _ScriptedNatsPeer.start([
+        const _PeerAttempt(replyToPings: true),
+        const _PeerAttempt(
+          replyToPings: false,
+          errorAfterConnect: "Authorization Violation",
+        ),
+        const _PeerAttempt(
+          replyToPings: false,
+          errorAfterConnect: "Authorization Violation",
+        ),
       ]);
       addTearDown(peer.close);
       final connection = await NatsConnection.connect(
@@ -384,17 +518,11 @@ void main() {
       await expectLater(
         closed.timeout(const Duration(seconds: 5)),
         completion(
-          isA<NatsAuthenticationException>()
-              .having(
-                (error) => error.reason,
-                "reason",
-                NatsAuthenticationFailure.authorizationViolation,
-              )
-              .having(
-                (error) => error.cause,
-                "cause",
-                isA<NatsConnectionException>(),
-              ),
+          isA<NatsAuthenticationException>().having(
+            (error) => error.reason,
+            "reason",
+            NatsAuthenticationFailure.authorizationViolation,
+          ),
         ),
       );
       await connection.closed.timeout(const Duration(seconds: 5));
