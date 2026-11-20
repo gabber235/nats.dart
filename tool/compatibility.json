@@ -23,7 +23,7 @@
     "scheduledCompatibility": "2.10.29"
   },
   "natsGo": {
-    "required": "1.53.1"
+    "required": "1.56.0"
   },
   "nativeServerArchives": {
     "linux-x64": {

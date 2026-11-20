@@ -39,7 +39,7 @@ client exists.
   drain on the native VM plus real Chromium.
 * JetStream covers streams, consumers, publish, KV, and Object Store, including
   three node failure and leadership scenarios.
-* Official `nats.go` 1.53.1 exchanges Core, JetStream, KV, and Object Store
+* Official `nats.go` 1.56.0 exchanges Core, JetStream, KV, and Object Store
   binary data in both directions.
 
 The full mandatory suite runs in Dagger. Every integration test is assigned to
